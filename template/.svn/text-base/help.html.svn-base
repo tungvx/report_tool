@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+    {% if message %}
+        {{ message }}
+    {% endif %}
+
+    <h1>1.Role of reporting system.</h1>
+    Currently, we are developing a software for  management of school  and reporting is an important function in this software. But because demands for the report of each school is different in Vietnam, there are no common standards for all schools, each school has a different reporting format. Therefore, to support the highest and serve many different purposes, we have decided to build the reporting system.
+    This is a reporting system by using excel to user define template, then upload to the server and the server will return result with that template. It is a long time to build a system which can be able to use easily. So, in first phare, we only  focus on building the simple reports and mainly for expert users (like programer ...),  then in a second phase,  we will build and design so that the user  can  use it more easily.
+    <h1>2.How to use.</h1>
+    2.1  The steps to generate reports.
+    First, you must define a temple in excel, upload to server and then receive result from server.</br>
+        2.2. Syntax:
+    -Name of function to generate data is in <#    > .
+    Example  <#  function_name  >
+    -Data   is in . Example       {{ name }}
+    2.3.Examples.
+         2.3.1 Printing the student list of a class.
+    The template such as the following picture. “10A” is given class name
+{% endblock %}

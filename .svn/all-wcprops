@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/repos/rsp/!svn/ver/80/report_tool
+END
+admin.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/repos/rsp/!svn/ver/30/report_tool/admin.py
+END
+manage.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/repos/rsp/!svn/ver/1/report_tool/manage.py
+END
+definitions.py
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/repos/rsp/!svn/ver/72/report_tool/definitions.py
+END
+report.py
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/repos/rsp/!svn/ver/79/report_tool/report.py
+END
+views.py
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/repos/rsp/!svn/ver/81/report_tool/views.py
+END
+__init__.py
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/repos/rsp/!svn/ver/1/report_tool/__init__.py
+END
+settings.py
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/repos/rsp/!svn/ver/61/report_tool/settings.py
+END
+models.py
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/repos/rsp/!svn/ver/48/report_tool/models.py
+END
+report_tool.db
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/repos/rsp/!svn/ver/81/report_tool/report_tool.db
+END
+urls.py
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/repos/rsp/!svn/ver/70/report_tool/urls.py
+END

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?><component name="dataSourceStorage">
+  <data-source source="LOCAL" name="Django default" product="" version="" jdbc-version="" driver-version="" uuid="3b98bc92-bb93-4f56-a217-e57f2994be13">
+    <jdbc-driver>org.sqlite.JDBC</jdbc-driver>
+    <jdbc-url>jdbc:sqlite:/home/tungvx/report_tool/report_tool.db</jdbc-url>
+    <libraries>
+      <library>
+        <url>file://$USER_HOME$/.PyCharm10/config/jdbc-drivers/zentus-sqlite-license.txt</url>
+      </library>
+      <library>
+        <url>file://$USER_HOME$/.PyCharm10/config/jdbc-drivers/sqlitejdbc-v056.jar</url>
+      </library>
+    </libraries>
+  </data-source>
+</component>
