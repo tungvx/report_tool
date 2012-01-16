@@ -45,7 +45,7 @@ def fileExtractor(file):
                     else:
                         body.append(temp1[5:])
                         indexes_of_body.append((row_x,col_x))
-    return function_name, index_of_function,head, index_of_head, body, indexes_of_body,fd
+    return function_name, index_of_function, head, index_of_head, body, indexes_of_body,fd
 
 def generate_output(list_objects,index_of_function,  head, index_of_head, body, indexes_of_body, input_file,fname):
     message = 'ok'
