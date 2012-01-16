@@ -137,6 +137,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'reporting',
     'report_tool',
     'xlrd',
     'xlwt',
