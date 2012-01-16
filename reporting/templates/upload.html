@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+{% if message %}
+	{{message}}
+{% endif %}	
+  
+<form action="{% url upload_file %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+    Use <a href="{% url download_file %}?filename=sample_input.xls&path=FILE_INSTRUCTION_PATH">this sample</a> for your input file</br>
+    {{ form.as_p }}
+    <input type="submit" value="Submit"></br>
+    Read <a href="{% url download_file %}?filename=user_manual.docx&path=FILE_INSTRUCTION_PATH">user manual</a> for instructions</br>
+</form>
+{% endblock %}
