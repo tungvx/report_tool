@@ -75,7 +75,6 @@ def file_list(request):
                               context_instance = c
                               )
 def upload_file(request):
-    print FILE_UPLOAD_PATH
     #This function handle upload action
     message=None
     if request.method == 'POST':                # If file fo# rm is  submitted
@@ -88,7 +87,7 @@ def upload_file(request):
             else:
                 now = datetime.datetime.now()
                 temp = Upload( filestore=str(now.year)+str(now.day)+str(now.month)+str(now.hour)+str(now.minute)+str(now.second)+f.name,filename =f.name,description = request.POST['description'],upload_time=datetime.datetime.now())
-                handle_uploaded_file(f, FILE_UPLOAD_PATH,temp.filestore)             #Save file content to uploaded folder
+                handle_uploaded_file(f, FILE_UPLOAD_PATH,temp.filestore) #Save file content to uploaded folder
                 generator = generate(temp.filestore)
                 if generator != "ok":
                     message = generator
