@@ -5,4 +5,5 @@ lib
 .Python
 .svn
 *.pyc
+*.xls
 .idea/
