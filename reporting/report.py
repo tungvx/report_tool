@@ -149,8 +149,18 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
                 temp_excel_function = temp_excel_function[:len(temp_excel_function)-1]
                 # process error for string in the input of the excel function:
                 temp_excel_function = temp_excel_function.replace(unichr(8220),'"').replace(unichr(8221),'"')
-                #write excel function
-                wtsheet.write(row,col_index,xlwt.Formula(temp_excel_function),style_list[xf_index])
+                # try to excecute the excel function as a python function
+                try:
+                    value_of_excel_function = eval(temp_excel_function)
+                    wtsheet.write(row,col_index,value_of_excel_function,style_list[xf_index])
+                except :
+                    try:
+                        wtsheet.write(row,col_index,xlwt.Formula(temp_excel_function),style_list[xf_index])
+                    except :
+                        message =  'Error in excel formula definition (at cell (' + str(index_of_excel_function[h][0] + 1) + ', '
+                        message = message + str(index_of_excel_function[h][1] + 1)
+                        message = message + ')): Syntax error '
+                        return message
 
         row += 2
     row -= 1
