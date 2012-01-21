@@ -15,7 +15,7 @@ from django.middleware.csrf import get_token
 from django.utils import simplejson
 from django.contrib.auth.forms import *
 from django.template import Context, loader
-from reporting.models import Upload,upload_file_form,handle_uploaded_file
+from reporting.models import Upload,upload_file_form,handle_uploaded_file, spreadsheet_report, spreadsheet_report_form
 from django.http import HttpResponse,HttpResponseRedirect
 import datetime
 import reporting.definitions
@@ -28,6 +28,7 @@ import os
 
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 UPLOAD = 'upload.html'
+SPREADSHEET_REPORT = 'spreadsheet_report.html'
 FILE_LIST = 'filelist.html'
 FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded'
 FILE_GENERATE_PATH = SITE_ROOT + '/generated'
@@ -116,3 +117,10 @@ def upload_file(request):
                               context_instance = c
                               )
 
+def spreadsheet_report(request): #action to handle create report from google spreadsheet
+    message = ''
+    form = spreadsheet_report_form()
+    c = RequestContext(request)
+    return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message},
+                              context_instance = c
+                              )

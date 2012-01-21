@@ -15,6 +15,13 @@ class Upload(models.Model):                             #Upload files table in d
         return self.description
 
 
+class spreadsheet_report(models.Model): # model to store the information about the spreadsheet used by user
+    created_time = models.DateTimeField('time created')
+    description = models.CharField(max_length=255)
+    spreadsheet_link = models.CharField(max_length=255)
+    def __unicode__(self):
+        return self.description
+
 class upload_file_form(forms.Form):                     # Define a simple form for uploading excels file
     description   = forms.CharField(max_length=30,required=True)
     file    = forms.FileField(required=True,)
@@ -26,3 +33,6 @@ def handle_uploaded_file(f,location,filename):
         fd.write(chunk)                                 #Write file data
     fd.close()                                          #Close the file
 
+class spreadsheet_report_form(forms.Form):
+    description   = forms.CharField(max_length=30,required=True)
+    spreadsheet_link = forms.CharField(max_length=30,required=True)

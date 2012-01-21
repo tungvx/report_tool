@@ -13,6 +13,7 @@ urlpatterns = patterns('reporting.views',
 
     #(r'^admin/report_tool/upload/$', 'views.index'),
     url(r'^add/$', 'upload_file',name='upload_file'),
+    url(r'^add_spreadsheet/$', 'spreadsheet_report',name='spreadsheet_report'),
     url(r'^list/$','file_list',name='file_list'),
     url(r'^download/$','download_file',name='download_file'),
     #(r'^admin/report_tool/uploads/(?P<upload_id>\d+)/$', 'views.detail'),

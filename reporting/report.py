@@ -91,6 +91,16 @@ def fileExtractor(file):
 
 def generate_output(list_objects,index_of_function,  head, index_of_head, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function):
     message = 'ok' #message to be returned to signal the success of the function
+
+    #dict to store the values of the data fields. Dict here is used for grouping the data
+    #the value of the header will be the keys of the dict
+    dict = {}
+
+    message = manipulate_data(list_objects,index_of_function,  head, index_of_head, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function, dict)
+    if message != 'ok':
+        return message
+    keys =  sorted(dict.keys()) #sort the keys
+
     sheet = input_file.sheet_by_index(0) # Get the first sheet
     wtbook, style_list = copy2(input_file) #copy the content and the format(style) of the input file into wtbook
     wtsheet = wtbook.get_sheet(0)# get the first sheet of wtbook
@@ -98,43 +108,6 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
     #remove the content at the position of the function which returns the data, remains the format of the cell
     xf_index = sheet.cell_xf_index(index_of_function[0][0],index_of_function[0][1])
     wtsheet.write(index_of_function[0][0],index_of_function[0][1],'', style_list[xf_index])
-
-    #dict to store the values of the data fields. Dict here is used for grouping the data
-    #the value of the header will be the keys of the dict
-    dict = {}
-
-    # compute values of the data fields and put them into the dict
-    for i in list_objects:
-        result = [] #store the all the values of the data fields of an object
-        key = '' #init the key for this object. If header is empty, then all the objects will have the same
-                # key (''), then the data will not be grouped
-        if head != '': #if the head is not empty
-            try:
-                key = eval('i.%s' % head) #try compute the value of the header
-            except: #if there is error, then raise exceptions
-                message =  'Error in head definition (at cell (' + str(index_of_head[0][0] + 1) + ', '
-                message = message + str(index_of_head[0][1] + 1)
-                message = message + ')): Object has no attribute '
-                message = message + head + '; or the function you defined returns wrong result (must return a list of objects)'
-                return message #return the message to signal the failure of the function
-        for y in body: #iterate all the fields in the body part of this object
-            try:
-                result.append(eval('i.%s' % y)) #try to evaluate the value of the field and add them into the result
-            except: # if error, raise exception and return the message
-                index = body.index(y)
-                message =  'Error in body definition (at cell (' + str(indexes_of_body[index][0] + 1) + ', '
-                message = message + str(indexes_of_body[index][1] + 1)
-                message = message + ')): Object has no attribute '
-                message = message + y + '; or the function you defined returns wrong result (must return a list of objects)'
-                return message
-        result = tuple(result)# convert to tupple: [] to ()
-        if dict.get(key): # if the key allready exists, trivially append the result to this key
-            dict[key].append(result)
-        else: #else create a  new key, and append the result
-            dict[key] = []
-            dict[key].append(result)
-
-    keys =  sorted(dict.keys()) #sort the keys
 
     #begin to write the data fields to wtbook
     row = 0 #variable used to travel all the rows in the wtsheet
@@ -225,6 +198,42 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
 
     #save output
     wtbook.save('%s/%s' % (FILE_GENERATE_PATH, fname))
+    return message
+
+# This function is used for manipulating the data:
+def manipulate_data(list_objects,index_of_function,  head, index_of_head, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function, dict):
+    message = 'ok'
+
+    # compute values of the data fields and put them into the dict
+    for i in list_objects:
+        result = [] #store the all the values of the data fields of an object
+        key = '' #init the key for this object. If header is empty, then all the objects will have the same
+                # key (''), then the data will not be grouped
+        if head != '': #if the head is not empty
+            try:
+                key = eval('i.%s' % head) #try compute the value of the header
+            except: #if there is error, then raise exceptions
+                message =  'Error in head definition (at cell (' + str(index_of_head[0][0] + 1) + ', '
+                message = message + str(index_of_head[0][1] + 1)
+                message = message + ')): Object has no attribute '
+                message = message + head + '; or the function you defined returns wrong result (must return a list of objects)'
+                return message #return the message to signal the failure of the function
+        for y in body: #iterate all the fields in the body part of this object
+            try:
+                result.append(eval('i.%s' % y)) #try to evaluate the value of the field and add them into the result
+            except: # if error, raise exception and return the message
+                index = body.index(y)
+                message =  'Error in body definition (at cell (' + str(indexes_of_body[index][0] + 1) + ', '
+                message = message + str(indexes_of_body[index][1] + 1)
+                message = message + ')): Object has no attribute '
+                message = message + y + '; or the function you defined returns wrong result (must return a list of objects)'
+                return message
+        result = tuple(result)# convert to tupple: [] to ()
+        if dict.get(key): # if the key allready exists, trivially append the result to this key
+            dict[key].append(result)
+        else: #else create a  new key, and append the result
+            dict[key] = []
+            dict[key].append(result)
     return message
 
 #This function is used for coping the contents of a excel file to an other one
