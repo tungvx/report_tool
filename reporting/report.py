@@ -96,9 +96,13 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
     #the value of the header will be the keys of the dict
     dict = {}
 
+    #manipulate the data
     message = manipulate_data(list_objects,index_of_function,  head, index_of_head, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function, dict)
+
+    #if something's wrong, the return the message to raise exception
     if message != 'ok':
         return message
+    
     keys =  sorted(dict.keys()) #sort the keys
 
     sheet = input_file.sheet_by_index(0) # Get the first sheet

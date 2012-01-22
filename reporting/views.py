@@ -78,7 +78,7 @@ def file_list(request):
 def upload_file(request):
     #This function handle upload action
     message=None
-    if request.method == 'POST':                # If file fo# rm is  submitted
+    if request.method == 'POST':                # If file fom is  submitted
         form = upload_file_form(request.POST, request.FILES)
         if form.is_valid():                     #Cheking form validate
             f = request.FILES['file']
@@ -119,7 +119,18 @@ def upload_file(request):
 
 def spreadsheet_report(request): #action to handle create report from google spreadsheet
     message = ''
-    form = spreadsheet_report_form()
+    if request.method == 'POST': # if the form is submitted
+        form = spreadsheet_report_form(request.POST) #get the form
+
+        #if the form is valid
+        if form.is_valid():
+            
+        else: # if the form is not valide, then raise error
+            message = 'Error'
+        
+    else: #if user want to create new report from spreadsheet
+        form = spreadsheet_report_form()
+
     c = RequestContext(request)
     return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message},
                               context_instance = c
