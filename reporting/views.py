@@ -15,7 +15,7 @@ from django.middleware.csrf import get_token
 from django.utils import simplejson
 from django.contrib.auth.forms import *
 from django.template import Context, loader
-from reporting.models import Upload,upload_file_form,handle_uploaded_file, spreadsheet_report, spreadsheet_report_form
+from reporting.models import Upload,upload_file_form,handle_uploaded_file, Spreadsheet_report, spreadsheet_report_form
 from django.http import HttpResponse,HttpResponseRedirect
 import datetime
 import reporting.definitions
@@ -23,8 +23,10 @@ from django.core.servers.basehttp import FileWrapper
 from xlwt.Workbook import Workbook
 import xlrd,xlwt
 from reporting.report import generate
+from reporting.generate_from_spreadsheet import generate_from_spreadsheet
 import mimetypes
 import os
+from urlparse import urlparse, parse_qs
 
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 UPLOAD = 'upload.html'
@@ -121,17 +123,44 @@ def spreadsheet_report(request): #action to handle create report from google spr
     message = ''
     if request.method == 'POST': # if the form is submitted
         form = spreadsheet_report_form(request.POST) #get the form
-
+        
         #if the form is valid
         if form.is_valid():
-            
-        else: # if the form is not valide, then raise error
-            message = 'Error'
+            spreadsheet_key = None
+
+            # get the spreadsheet link from the request
+            spreadsheet_link = request.POST.get('spreadsheet_link')
+
+            # extract the key from the spreadsheet link
+            spreadsheet_key = parse_qs(urlparse(spreadsheet_link).query).get('key')[0]
+
+            if spreadsheet_key == '' or spreadsheet_key == None: #if the spreadsheet key is empty
+                # display error message
+                message = 'Please enter the correct spreadsheet link'
+                c = RequestContext(request)
+                return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
+
+            # from the key of the spreadsheet, generate the report
+            generator = generate_from_spreadsheet(spreadsheet_key)
+
+            #if the message is not ok
+            if generator != 'ok':
+                #render the add report page, and display the error message
+                message = generator
+                c = RequestContext(request)
+                return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
+            else:
+                #create and save spreadsheet_report object
+                now = datetime.datetime.now()
+                spreadsheet_report_object = Spreadsheet_report(created_time = now, description = request.POST['description'],spreadsheet_link = spreadsheet_link)
+                #uncomment next line to save the report
+#                spreadsheet_report_object.save()
+
+        else: # if the form is not valid, then raise error
+            message = 'Please enter the required fields'
         
     else: #if user want to create new report from spreadsheet
         form = spreadsheet_report_form()
 
     c = RequestContext(request)
-    return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message},
-                              context_instance = c
-                              )
+    return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
