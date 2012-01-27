@@ -1,11 +1,9 @@
 import datetime
-import django
 from django.db import models
 from django import forms
 from xlwt.Workbook import Workbook
 import xlrd,xlwt
 import re
-from report_tool.models import Pupil,Class,School
 from xlutils.styles import Styles
 from xlutils.copy import copy #http://pypi.python.org/pypi/xlutils
 from xlutils.filter import process,XLRDReader,XLWTWriter
@@ -13,7 +11,7 @@ import operator
 import definitions
 from itertools import groupby
 import os
-from extract_information import extract_information
+from extract_information import extract_information, get_list_of_object
 
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__)) #path of the app
 FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded' #path to uploaded folder
@@ -28,29 +26,16 @@ def generate(filename):
     except:
         return 'Wrong input file, please check all data' #if cannot extract the data, return wrong message
     else:
-        try:
-            #try to get the list of objects by executing the function in definitions.py file
-            list_objects = eval('definitions.%s'%function_name)
-        except :
-            try:
-                #execute the function directly
-                list_objects = eval(function_name)
-            except :
-                #raise error if can not get list of objects
-                return 'Definition of function error'
-        try:
-            #check if the function user specified returns the correct types of result
-            len(list_objects)
-        except :
-            #if not, raise error
-            return 'The function you defined returns wrong result (must return a list of objects)'
+        message, list_objects = get_list_of_object(function_name,index_of_function)
+
+        if message != 'ok':
+            return message
 
         #generate the report to the excel file, message here is the signal of the success
         message = generate_output(list_objects, index_of_function, head, index_of_head, body,
                                   indexes_of_body, input_file,fname, index_of_excel_function, excel_function)
         return message
     return 'ok'
-
 
 #function to extract specifications from the template file
 def fileExtractor(file):
@@ -165,7 +150,7 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
                 temp_excel_function = temp_excel_function[2:]
                 # process error for string in the input of the excel function:
                 temp_excel_function = temp_excel_function.replace(unichr(8220),'"').replace(unichr(8221),'"')
-                # try to excecute the excel function as a python function, and write the result to the ouput sheet
+                # try to execute the excel function as a python function, and write the result to the ouput sheet
                 try:
                     value_of_excel_function = eval(temp_excel_function)
                     wtsheet.write(row,col_index,value_of_excel_function,style_list[xf_index])
