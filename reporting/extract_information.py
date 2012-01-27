@@ -5,7 +5,7 @@ import django
 
 #this function is used for extracting information from a string input value
 def extract_information(index_of_function, index_of_head, body, indexes_of_body,
-                        index_of_excel_function, excel_function, value, row_x, col_x):
+                        index_of_excel_function, excel_function, value, row_x, col_x, other_info, index_of_other_info):
     function_name = ''
     head = ''
     temp = re.search('#<.*?>', unicode(value)) #if the cell contains the function which returns the data
@@ -23,9 +23,12 @@ def extract_information(index_of_function, index_of_head, body, indexes_of_body,
                 else:
                     body.append(temp1[5:]) #else the field is the body
                     indexes_of_body.append((row_x, col_x)) #stores the location of the body
-        if value.startswith(":="):
-            excel_function.append(value) #strores the value of the cell contain the specified excel function
-            index_of_excel_function.append((row_x, col_x)) #store index of above excel function
+            if value.startswith(":="):
+                excel_function.append(value) #strores the value of the cell contain the specified excel function
+                index_of_excel_function.append((row_x, col_x)) #store index of above excel function
+        else:
+            other_info.append(value) #store other information
+            index_of_other_info.append((row_x,col_x))#store the index of other information
 
     return function_name, head
 

@@ -11,10 +11,8 @@ from extract_information import extract_information, get_list_of_object
 from xlwt.Utils import cell_to_rowcol2
 
 gd_client = gdata.spreadsheet.service.SpreadsheetsService()
-gd_client = gdata.spreadsheet.service.SpreadsheetsService()
 gd_client.email = 'toilatung90@gmail.com'
 gd_client.password = 'tungyeungoc'
-gd_client.source = 'exampleCo-exampleApp-1'
 gd_client.ProgrammaticLogin()
 
 def generate_from_spreadsheet(key):
@@ -23,8 +21,7 @@ def generate_from_spreadsheet(key):
     try: #try to get all the cell containing the data in the first sheet
         feed = gd_client.GetCellsFeed(key, 1)
     except :
-        message = "wrong spreadsheet link, please check again"
-        return message
+        return "wrong spreadsheet link, please check again"
 
     #extract information from the spreadsheet
     function_name, index_of_function, head, index_of_head, body, indexes_of_body,index_of_excel_function, excel_function = extract_file(feed)
@@ -46,7 +43,7 @@ def generate_from_spreadsheet(key):
 def generate_output(list_of_objects, index_of_function, head, index_of_head, body, indexes_of_body, index_of_excel_function, excel_function, key):
     message = 'ok' #message the indicate the success of the function
 
-    
+    gd_client.InsertRow({'tung':'1'}, key,1)
     
     return message #return the message
 #        print '%s %s\n' % (entry.title.text, entry.content.text)
@@ -63,6 +60,8 @@ def extract_file(feed):
     indexes_of_body = [] #indexes of the body data
     excel_function = [] #stores all the excel functions which user specified
     index_of_excel_function = [] #indexes of excel function
+    other_info = [] #other information
+    index_of_other_info = []#index of other information
 
     for entry in feed.entry: #iterate all the cells and extract information from each cell
         #get the value, row, column of the cell
@@ -77,7 +76,7 @@ def extract_file(feed):
         col_x = temp_position[1]
         
         #call the function to extract information
-        temp_function_name, temp_head = extract_information(index_of_function, index_of_head, body, indexes_of_body,index_of_excel_function, excel_function, value, row_x, col_x)
+        temp_function_name, temp_head = extract_information(index_of_function, index_of_head, body, indexes_of_body,index_of_excel_function, excel_function, value, row_x, col_x, other_info, index_of_function)
 
         #append the function_name and the header
         function_name += temp_function_name

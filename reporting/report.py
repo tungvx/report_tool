@@ -57,7 +57,7 @@ def fileExtractor(file):
             if value: #if the cell contains data
 
                 #call the function to extract information
-                temp_function_name, temp_head = extract_information(index_of_function, index_of_head, body, indexes_of_body,index_of_excel_function, excel_function, value, row_x, col_x)
+                temp_function_name, temp_head = extract_information(index_of_function, index_of_head, body, indexes_of_body,index_of_excel_function, excel_function, value, row_x, col_x,[],[])
 
                 #append the function_name and the header
                 function_name += temp_function_name
