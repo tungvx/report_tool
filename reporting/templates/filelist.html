@@ -7,10 +7,10 @@
     <table border="1"  cellspacing="0" width="60%">
 
         <thead>
-            <th width="25%">Uploaded</th>
+            <th width="25%">Input report</th>
             <th width="25%">Description</th>
-            <th width="25%">Download report</th>
-            <th>uploaded at</th>
+            <th width="25%">Output report</th>
+            <th>Created at</th>
         </thead>
 
         {% for file in file_list %}
@@ -23,6 +23,19 @@
             </tr>
 
         {% endfor %}
+
+        {% for s in spreadsheet_list %}
+            <tr>
+                <td align="center"><a href="{{ s.spreadsheet_link }}"/>{{  s.title }}</td>
+                <td align="center">{{ s.description }}</td>
+                <td align="center"><a href="{{ s.output_link }}"/>
+                Generated</td>
+                <td align="center">{{ s.created_time }}</td>
+            </tr>
+
+        {% endfor %}
+
+
         
     </table></br>
     <a href="{% url upload_file %}"><button type="button" onclick="">Add new report</button></a>

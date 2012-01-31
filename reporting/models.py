@@ -19,6 +19,8 @@ class Spreadsheet_report(models.Model): # model to store the information about t
     created_time = models.DateTimeField('time created')
     description = models.CharField(max_length=255)
     spreadsheet_link = models.CharField(max_length=255)
+    output_link = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
     def __unicode__(self):
         return self.description
 

@@ -71,9 +71,10 @@ def download_file(request):
 
 def file_list(request):
     message = None
-    file_list = list(Upload.objects.order_by('-upload_time'));
+    file_list = list(Upload.objects.order_by('-upload_time'))
+    spreadsheet_list = list(Spreadsheet_report.objects.order_by('-created_time'))
     c = RequestContext(request)
-    return render_to_response(FILE_LIST, {'message':message,'file_list':file_list},
+    return render_to_response(FILE_LIST, {'message':message,'file_list':file_list, 'spreadsheet_list':spreadsheet_list},
                               context_instance = c
                               )
 def upload_file(request):
@@ -140,7 +141,7 @@ def spreadsheet_report(request): #action to handle create report from google spr
                 return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
             
             # from the key of the spreadsheet, generate the report
-            generator = generate_from_spreadsheet(spreadsheet_key)
+            generator, output_link,title = generate_from_spreadsheet(spreadsheet_key)
 
             #if the message is not ok
             if generator != 'ok':
@@ -151,9 +152,16 @@ def spreadsheet_report(request): #action to handle create report from google spr
             else:
                 #create and save spreadsheet_report object
                 now = datetime.datetime.now()
-                spreadsheet_report_object = Spreadsheet_report(created_time = now, description = request.POST['description'],spreadsheet_link = spreadsheet_link)
+                spreadsheet_report_object = Spreadsheet_report(created_time = now, description = request.POST['description'],spreadsheet_link = spreadsheet_link, output_link = output_link, title = title)
                 #uncomment next line to save the report
-#                spreadsheet_report_object.save()
+                spreadsheet_report_object.save()
+                message = "Successfully generate the report"
+                c = RequestContext(request)
+                file_list = list(Upload.objects.order_by('-upload_time'))
+                spreadsheet_list = list(Spreadsheet_report.objects.order_by('-created_time'))
+                return render_to_response(FILE_LIST, {'message':message,'file_list':file_list, 'spreadsheet_list':spreadsheet_list},
+                              context_instance = c
+                              )
 
         else: # if the form is not valid, then raise error
             message = 'Please enter the required fields'

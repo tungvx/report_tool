@@ -45,17 +45,17 @@ def generate_from_spreadsheet(key):
         gd_client.Export(entry, FILE_UPLOAD_PATH + '/' + uploaded_file_name)
         gd_client.SetClientLoginToken(docs_auth_token)
     except :
-        return "wrong spreadsheet link, please check again"
+        return "wrong spreadsheet link, please check again", "", ""
 
     #call generate function
     message = generate(uploaded_file_name)
 
     if  message != 'ok':
-        return message
+        return message, "", ""
 
-    message = upload_result(uploaded_file_name, title)
+    message, output_link = upload_result(uploaded_file_name, title)
 
-    return message #return the message
+    return message, output_link, title #return the message
 
 def upload_result(file_name, title):
     message = 'ok'
@@ -63,5 +63,5 @@ def upload_result(file_name, title):
     gd_client.ClientLogin('toilatung90@gmail.com', 'tungyeungoc')
     ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
     entry = gd_client.Upload(ms, 'Report result of ' + title)
-    print 'Spreadsheet now accessible online at:', entry.GetAlternateLink().href
-    return message
+    output_link = entry.GetAlternateLink().href
+    return message, output_link
