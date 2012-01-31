@@ -2,101 +2,66 @@ try:
   from xml.etree import ElementTree
 except ImportError:
   from elementtree import ElementTree
+
+import gdata
 import gdata.spreadsheet.service
 import gdata.service
-import atom.service
 import gdata.spreadsheet
-import atom
-from extract_information import extract_information, get_list_of_object
-from xlwt.Utils import cell_to_rowcol2
+import gdata.docs
+import gdata.docs.data
+import gdata.docs.client
+import gdata.docs.service
+import gdata.spreadsheet.service
+import datetime
+import os
+from report import generate
 
-gd_client = gdata.spreadsheet.service.SpreadsheetsService()
-gd_client.email = 'toilatung90@gmail.com'
-gd_client.password = 'tungyeungoc'
-gd_client.ProgrammaticLogin()
+SITE_ROOT = os.path.dirname(os.path.realpath(__file__)) #path of the app
+FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded' #path to uploaded folder
+FILE_GENERATE_PATH = SITE_ROOT + '/generated' #path to generated folder
 
 def generate_from_spreadsheet(key):
     message = 'ok' #message to be returned to indicate whether the function is executed successfully
 
     try: #try to get all the cell containing the data in the first sheet
-        feed = gd_client.GetCellsFeed(key, 1)
+        gd_client = gdata.docs.service.DocsService()
+        gd_client.email = 'toilatung90@gmail.com'
+        gd_client.password = 'tungyeungoc'
+        gd_client.ssl = True
+        gd_client.source = "My Fancy Spreadsheet Downloader"
+        gd_client.ProgrammaticLogin()
+        spreadsheets_client = gdata.spreadsheet.service.SpreadsheetsService()
+        spreadsheets_client.email = gd_client.email
+        spreadsheets_client.password = gd_client.password
+        spreadsheets_client.source = "My Fancy Spreadsheet Downloader"
+        spreadsheets_client.ProgrammaticLogin()
+        uri = 'http://docs.google.com/feeds/documents/private/full/%s' % key
+        entry = gd_client.GetDocumentListEntry(uri)
+        title = entry.title.text
+        docs_auth_token = gd_client.GetClientLoginToken()
+        gd_client.SetClientLoginToken(spreadsheets_client.GetClientLoginToken())
+        now = datetime.datetime.now()
+        uploaded_file_name = str(now.year)+str(now.day)+str(now.month)+str(now.hour)+str(now.minute)+str(now.second) + '.xls'
+        gd_client.Export(entry, FILE_UPLOAD_PATH + '/' + uploaded_file_name)
+        gd_client.SetClientLoginToken(docs_auth_token)
     except :
         return "wrong spreadsheet link, please check again"
 
-    #extract information from the spreadsheet
-    function_name, index_of_function, head, index_of_head, body, indexes_of_body,index_of_excel_function, excel_function = extract_file(feed)
+    #call generate function
+    message = generate(uploaded_file_name)
 
-    #get the list of objects containing the data
-    message, list_of_objects = get_list_of_object(function_name,index_of_function)
+    if  message != 'ok':
+        return message
 
-    if message != 'ok': #if the operation is not successful
-        return message #return the message
-
-    #generate the report
-    message = generate_output(list_of_objects, index_of_function, head, index_of_head, body,
-                                  indexes_of_body, index_of_excel_function, excel_function, key)
+    message = upload_result(uploaded_file_name, title)
 
     return message #return the message
 
-
-#function to generate the report
-def generate_output(list_of_objects, index_of_function, head, index_of_head, body, indexes_of_body, index_of_excel_function, excel_function, key):
-    message = 'ok' #message the indicate the success of the function
-
-    gd_client.InsertRow({'tung':'1'}, key,1)
-    
-    return message #return the message
-#        print '%s %s\n' % (entry.title.text, entry.content.text)
-#    gd_client.UpdateCell(row=2, col=2, inputValue="tung",key=key, wksht_id=1)
-
-
-#function to extract information from the spreadsheet
-def extract_file(feed):
-    function_name = ''#name of the function which returns the list of objects
-    head = '' #header
-    index_of_head = [] #index of header
-    index_of_function = [] #index of the function specification
-    body = [] # contains the list of all the body data
-    indexes_of_body = [] #indexes of the body data
-    excel_function = [] #stores all the excel functions which user specified
-    index_of_excel_function = [] #indexes of excel function
-    other_info = [] #other information
-    index_of_other_info = []#index of other information
-
-    for entry in feed.entry: #iterate all the cells and extract information from each cell
-        #get the value, row, column of the cell
-        value = entry.content.text
-        value = value.decode('utf-8')
-
-        #convert the cell letter to the cell number
-        temp_position = cell_to_rowcol2(entry.title.text)
-
-        #get the row number and column number of the cell
-        row_x = temp_position[0]
-        col_x = temp_position[1]
-        
-        #call the function to extract information
-        temp_function_name, temp_head = extract_information(index_of_function, index_of_head, body, indexes_of_body,index_of_excel_function, excel_function, value, row_x, col_x, other_info, index_of_function)
-
-        #append the function_name and the header
-        function_name += temp_function_name
-        head += temp_head
-
-    #return all the computed values
-    return function_name, index_of_function, head, index_of_head, body, indexes_of_body, index_of_excel_function, excel_function
-
-def PrintFeed(feed):
-  for i, entry in enumerate(feed.entry):
-    if isinstance(feed, gdata.spreadsheet.SpreadsheetsCellsFeed):
-      print '%s %s\n' % (entry.title.text, entry.content.text)
-    elif isinstance(feed, gdata.spreadsheet.SpreadsheetsListFeed):
-      print '%s %s %s' % (i, entry.title.text, entry.content.text)
-      # Print this row's value for each column (the custom dictionary is
-      # built from the gsx: elements in the entry.) See the description of
-      # gsx elements in the protocol guide.
-      print 'Contents:'
-      for key in entry.custom:
-        print '  %s: %s' % (key, entry.custom[key].text)
-      print '\n',
-    else:
-      print '%s %s\n' % (i, entry.title.text)
+def upload_result(file_name, title):
+    message = 'ok'
+    gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
+    gd_client.ClientLogin('toilatung90@gmail.com', 'tungyeungoc')
+    ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
+    entry = gd_client.Upload(ms, 'Report result of ' + title)
+    print 'Spreadsheet now accessible online at:', entry.GetAlternateLink().href
+    return message

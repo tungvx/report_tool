@@ -1,5 +1,4 @@
 from time import time, ctime
-import datetime
 from django.core.files import File
 import os.path
 import datetime
@@ -139,7 +138,7 @@ def spreadsheet_report(request): #action to handle create report from google spr
                 message = 'Please enter the correct spreadsheet link'
                 c = RequestContext(request)
                 return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
-
+            
             # from the key of the spreadsheet, generate the report
             generator = generate_from_spreadsheet(spreadsheet_key)
 
