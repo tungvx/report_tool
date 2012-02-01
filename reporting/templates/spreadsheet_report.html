@@ -5,7 +5,9 @@
 {% endif %}	
   
 <form action="{% url spreadsheet_report %}" method="post" enctype="multipart/form-data">{% csrf_token %}
-    {{ form.as_p }} 
+    {{ form.as_p }}
+    Google account: <input type="text" name="username" /><br />
+    Password: <input type="password" name="password" /><br />
     <input type="submit" value="Submit"></br>
 </form>
 {% endblock %}

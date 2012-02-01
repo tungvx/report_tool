@@ -20,24 +20,26 @@ SITE_ROOT = os.path.dirname(os.path.realpath(__file__)) #path of the app
 FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded' #path to uploaded folder
 FILE_GENERATE_PATH = SITE_ROOT + '/generated' #path to generated folder
 
-def generate_from_spreadsheet(key, token):
+def generate_from_spreadsheet(key, token, username, password):
     message = 'ok' #message to be returned to indicate whether the function is executed successfully
 
     try: #try to get all the cell containing the data in the first sheet
         gd_client = gdata.docs.service.DocsService()
-        gd_client.email = 'toilatung90@gmail.com'
-        gd_client.password = 'password'
+        gd_client.email = username
+        gd_client.password = password
         gd_client.ssl = True
         gd_client.source = "My Fancy Spreadsheet Downloader"
         gd_client.ProgrammaticLogin()
+        uri = 'http://docs.google.com/feeds/documents/private/full/%s' % key
+        entry = gd_client.GetDocumentListEntry(uri)
+        title = entry.title.text
+
         spreadsheets_client = gdata.spreadsheet.service.SpreadsheetsService()
         spreadsheets_client.email = gd_client.email
         spreadsheets_client.password = gd_client.password
         spreadsheets_client.source = "My Fancy Spreadsheet Downloader"
         spreadsheets_client.ProgrammaticLogin()
-        uri = 'http://docs.google.com/feeds/documents/private/full/%s' % key
-        entry = gd_client.GetDocumentListEntry(uri)
-        title = entry.title.text
+
         docs_auth_token = gd_client.GetClientLoginToken()
         gd_client.SetClientLoginToken(spreadsheets_client.GetClientLoginToken())
         now = datetime.datetime.now()
@@ -53,14 +55,14 @@ def generate_from_spreadsheet(key, token):
     if  message != 'ok':
         return message, "", ""
 
-    message, output_link = upload_result(uploaded_file_name, title)
+    message, output_link = upload_result(uploaded_file_name, title, username, password)
 
     return message, output_link, title #return the message
 
-def upload_result(file_name, title):
+def upload_result(file_name, title, username, password):
     message = 'ok'
     gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
-    gd_client.ClientLogin('toilatung90@gmail.com', 'password')
+    gd_client.ClientLogin(username, password)
     ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
     entry = gd_client.Upload(ms, 'Report result of ' + title)
     output_link = entry.GetAlternateLink().href

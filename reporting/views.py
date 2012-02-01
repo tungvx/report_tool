@@ -132,6 +132,12 @@ def spreadsheet_report(request): #action to handle create report from google spr
             # get the spreadsheet link from the request
             spreadsheet_link = request.POST.get('spreadsheet_link')
 
+            #get google username
+            username = request.POST.get('username')
+
+            #get password of google account
+            password = request.POST.get('password')
+
             # extract the key from the spreadsheet link
             spreadsheet_key = parse_qs(urlparse(spreadsheet_link).query).get('key')[0]
 
@@ -142,7 +148,7 @@ def spreadsheet_report(request): #action to handle create report from google spr
                 return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
             
             # from the key of the spreadsheet, generate the report
-            generator, output_link,title = generate_from_spreadsheet(spreadsheet_key, request.session.get('token'))
+            generator, output_link,title = generate_from_spreadsheet(spreadsheet_key, request.session.get('token'), username, password)
 
             #if the message is not ok
             if generator != 'ok':
@@ -168,17 +174,19 @@ def spreadsheet_report(request): #action to handle create report from google spr
             message = 'Please enter the required fields'
         
     else: #if user want to create new report from spreadsheet
-        request.session['token']=None
-        temp_token = request.GET.get('token')
-        if temp_token:
-            request.session['token'] = temp_token
-        if request.session.get('token') == None:
-            host = request.get_host()
-            next = 'http://' + str(host) + '/add_spreadsheet'
-            scopes = ['https://docs.google.com/feeds/', 'https://spreadsheets.google.com/feeds/']
-            secure = True  # set secure=True to request a secure AuthSub token
-            session = True
-            return redirect(gdata.service.GenerateAuthSubRequestUrl(next, scopes, secure=secure, session=session))
+#        request.session['token']=None
+#        temp_token = request.GET.get('token')
+#        if temp_token:
+#            request.session['token'] = temp_token
+#        if request.session.get('token') == None:
+#            host = request.get_host()
+#            next = 'http://' + str(host) + '/add_spreadsheet'
+#            scopes = ['https://docs.google.com/feeds/', 'https://spreadsheets.google.com/feeds/']
+#            secure = True  # set secure=True to request a secure AuthSub token
+#            session = True
+#            return redirect(gdata.service.GenerateAuthSubRequestUrl(next, scopes, secure=secure, session=session))
+        #if user is authenticated:
+        
         form = spreadsheet_report_form()
 
     c = RequestContext(request)
