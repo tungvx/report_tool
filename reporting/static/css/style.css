@@ -870,3 +870,12 @@ table.dataform input {
     /*border: 1px solid #a9c6c9;*/
 /*}*/
 
+
+form #id_spreadsheet_link{
+    width: 1000px;
+    height: 20px;
+}
+
+form .username, form #id_spreadsheet_link, form .password {
+    margin-bottom: 5px
+}

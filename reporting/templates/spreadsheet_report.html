@@ -5,9 +5,11 @@
 {% endif %}	
   
 <form action="{% url spreadsheet_report %}" method="post" enctype="multipart/form-data">{% csrf_token %}
+    Use <a href="https://docs.google.com/spreadsheet/ccc?key=0AtpS98AUOJapdGtuSlVhcGdMVUlEelJWZG80QmNhWGc&hl=en_US#gid=0" target="_blank">this sample</a> as your input</br>
+    Make sure you have permission to read and modify the spreadsheet!</br>
     {{ form.as_p }}
-    Google account: <input type="text" name="username" /><br />
-    Password: <input type="password" name="password" /><br />
+    Google account: <input class="username" type="text" name="username" required/><br />
+    Password: <input type="password" name="password" class="password" required/><br />
     <input type="submit" value="Submit"></br>
 </form>
 {% endblock %}
