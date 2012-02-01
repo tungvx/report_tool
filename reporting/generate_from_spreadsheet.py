@@ -20,13 +20,13 @@ SITE_ROOT = os.path.dirname(os.path.realpath(__file__)) #path of the app
 FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded' #path to uploaded folder
 FILE_GENERATE_PATH = SITE_ROOT + '/generated' #path to generated folder
 
-def generate_from_spreadsheet(key):
+def generate_from_spreadsheet(key, token):
     message = 'ok' #message to be returned to indicate whether the function is executed successfully
 
     try: #try to get all the cell containing the data in the first sheet
         gd_client = gdata.docs.service.DocsService()
         gd_client.email = 'toilatung90@gmail.com'
-        gd_client.password = 'tungyeungoc'
+        gd_client.password = 'password'
         gd_client.ssl = True
         gd_client.source = "My Fancy Spreadsheet Downloader"
         gd_client.ProgrammaticLogin()
@@ -60,7 +60,7 @@ def generate_from_spreadsheet(key):
 def upload_result(file_name, title):
     message = 'ok'
     gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
-    gd_client.ClientLogin('toilatung90@gmail.com', 'tungyeungoc')
+    gd_client.ClientLogin('toilatung90@gmail.com', 'password')
     ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
     entry = gd_client.Upload(ms, 'Report result of ' + title)
     output_link = entry.GetAlternateLink().href

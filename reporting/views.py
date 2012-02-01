@@ -6,7 +6,7 @@ from django.core import serializers
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotAllowed
 from django.core.urlresolvers import reverse
 from django.http.multipartparser import FILE
-from django.shortcuts import render_to_response
+from django.shortcuts import render_to_response, redirect
 from django.template.loader import render_to_string
 from django.template import RequestContext, loader
 from django.core.exceptions import *
@@ -26,6 +26,7 @@ from reporting.generate_from_spreadsheet import generate_from_spreadsheet
 import mimetypes
 import os
 from urlparse import urlparse, parse_qs
+import gdata.service
 
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 UPLOAD = 'upload.html'
@@ -141,7 +142,7 @@ def spreadsheet_report(request): #action to handle create report from google spr
                 return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
             
             # from the key of the spreadsheet, generate the report
-            generator, output_link,title = generate_from_spreadsheet(spreadsheet_key)
+            generator, output_link,title = generate_from_spreadsheet(spreadsheet_key, request.session.get('token'))
 
             #if the message is not ok
             if generator != 'ok':
@@ -167,6 +168,17 @@ def spreadsheet_report(request): #action to handle create report from google spr
             message = 'Please enter the required fields'
         
     else: #if user want to create new report from spreadsheet
+        request.session['token']=None
+        temp_token = request.GET.get('token')
+        if temp_token:
+            request.session['token'] = temp_token
+        if request.session.get('token') == None:
+            host = request.get_host()
+            next = 'http://' + str(host) + '/add_spreadsheet'
+            scopes = ['https://docs.google.com/feeds/', 'https://spreadsheets.google.com/feeds/']
+            secure = True  # set secure=True to request a secure AuthSub token
+            session = True
+            return redirect(gdata.service.GenerateAuthSubRequestUrl(next, scopes, secure=secure, session=session))
         form = spreadsheet_report_form()
 
     c = RequestContext(request)
