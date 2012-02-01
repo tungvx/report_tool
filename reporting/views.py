@@ -138,8 +138,13 @@ def spreadsheet_report(request): #action to handle create report from google spr
             #get password of google account
             password = request.POST.get('password')
 
-            # extract the key from the spreadsheet link
-            spreadsheet_key = parse_qs(urlparse(spreadsheet_link).query).get('key')[0]
+            # try to extract the key from the spreadsheet link
+            try:
+                spreadsheet_key = parse_qs(urlparse(spreadsheet_link).query).get('key')[0]
+            except :
+                message = 'Wrong link'
+                c = RequestContext(request)
+                return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
 
             if spreadsheet_key == '' or spreadsheet_key == None: #if the spreadsheet key is empty
                 # display error message
