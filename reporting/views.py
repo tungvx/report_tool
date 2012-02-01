@@ -104,7 +104,7 @@ def upload_file(request):
                     temp.save()       #Save file information into database
                     message="Uploaded successfully. Your uploaded and generated file will be stored shortly. You should download them in the file list page as soon as possible!"
                     c = RequestContext(request)
-                    file_list = list(Upload.objects.order_by('-upload_time'));
+                    file_list = [temp]
                     return render_to_response(FILE_LIST, {'file_list':file_list, 'message':message},
                               context_instance = c
                               )
@@ -164,8 +164,7 @@ def spreadsheet_report(request): #action to handle create report from google spr
                 spreadsheet_report_object.save()
                 message = "Successfully generate the report"
                 c = RequestContext(request)
-                file_list = list(Upload.objects.order_by('-upload_time'))
-                spreadsheet_list = list(Spreadsheet_report.objects.order_by('-created_time'))
+                spreadsheet_list = [spreadsheet_report_object]
                 return render_to_response(FILE_LIST, {'message':message,'file_list':file_list, 'spreadsheet_list':spreadsheet_list},
                               context_instance = c
                               )
