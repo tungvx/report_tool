@@ -47,7 +47,7 @@ def generate_from_spreadsheet(key, token, username, password):
         gd_client.Export(entry, FILE_UPLOAD_PATH + '/' + uploaded_file_name)
         gd_client.SetClientLoginToken(docs_auth_token)
     except :
-        return "wrong spreadsheet link, please check again", "", ""
+        return "Wrong spreadsheet link or you do not have permission to modify the file, please check again!", "", ""
 
     #call generate function
     message = generate(uploaded_file_name)
@@ -61,9 +61,12 @@ def generate_from_spreadsheet(key, token, username, password):
 
 def upload_result(file_name, title, username, password):
     message = 'ok'
-    gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
-    gd_client.ClientLogin(username, password)
-    ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
-    entry = gd_client.Upload(ms, 'Report result of ' + title)
-    output_link = entry.GetAlternateLink().href
+    try:
+        gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
+        gd_client.ClientLogin(username, password)
+        ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
+        entry = gd_client.Upload(ms, 'Report result of ' + title)
+        output_link = entry.GetAlternateLink().href
+    except :
+        return "Wrong email or password!",""
     return message, output_link
