@@ -2,6 +2,7 @@ import re
 import xlwt
 from report_tool.models import Pupil,Class,School
 import django
+import definitions
 
 #this function is used for extracting information from a string input value
 def extract_information(index_of_function, index_of_head, body, indexes_of_body,

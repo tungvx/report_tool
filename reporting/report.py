@@ -49,7 +49,6 @@ def fileExtractor(file):
     index_of_excel_function = [] #indexes of excel function
     fd = xlrd.open_workbook('%s/%s' % (FILE_UPLOAD_PATH, file), formatting_info=True)     #Read excel file for get data
     sheet = fd.sheet_by_index(0) # Get the first sheet
-    
     #read information user specified
     for col_x in range(sheet.ncols):
         for row_x in range(sheet.nrows):
@@ -62,11 +61,13 @@ def fileExtractor(file):
                 #append the function_name and the header
                 function_name += temp_function_name
                 head += temp_head
-                
     return function_name, index_of_function, head, index_of_head, body, indexes_of_body,fd, index_of_excel_function, excel_function
 
 def generate_output(list_objects,index_of_function,  head, index_of_head, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function):
     message = 'ok' #message to be returned to signal the success of the function
+
+    #back up excel_function
+    backup_excel_function = excel_function[:]
 
     #dict to store the values of the data fields. Dict here is used for grouping the data
     #the value of the header will be the keys of the dict
@@ -136,6 +137,7 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
                 if indexes_of_body[h] in index_of_excel_function:
                     #replace the data in the excel function for later formula
                     excel_function[index_of_excel_function.index(indexes_of_body[h])] = excel_function[index_of_excel_function.index(indexes_of_body[h])].replace('{{body:' + body[h] + '}}',value)
+
                 else:# else just write the value of the data field to the cell
                     wtsheet.write(row,col_index,value, style_list[xf_index])
 
@@ -153,7 +155,14 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
                 # try to execute the excel function as a python function, and write the result to the ouput sheet
                 try:
                     value_of_excel_function = eval(temp_excel_function)
-                    wtsheet.write(row,col_index,value_of_excel_function,style_list[xf_index])
+                    #if the value of the function is "remove_row", the delete the current data row
+                    if (value_of_excel_function == "remove_row"):
+                        for temp_index in range(len(indexes_of_body)):
+                            wtsheet.write(row,indexes_of_body[temp_index][1],"")#clear data
+                            row -= 1
+                            break
+                    else: #else output the value of the function to the input file
+                        wtsheet.write(row,col_index,value_of_excel_function,style_list[xf_index])
                 except : #if can not execute as a python function, we will try to parse it as a excel formula
                     try:
                         wtsheet.write(row,col_index,xlwt.Formula(temp_excel_function),style_list[xf_index])
@@ -162,6 +171,9 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
                         message = message + str(index_of_excel_function[h][1] + 1)
                         message = message + ')): Syntax error '
                         return message
+
+            #restore excel_function:
+            excel_function = backup_excel_function[:]
 
         row += 2 #each group are separated by one row, for beauty
     row -= 1
