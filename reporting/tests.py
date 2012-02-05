@@ -2,17 +2,13 @@ from django.test import TestCase
 from reporting.models import Upload, Spreadsheet_report
 from datetime import datetime
 from extract_information import get_list_of_object, extract_information
+from generate_from_spreadsheet import upload_result
 
 
 class SimpleTest(TestCase):
     def setUp(self):
         self.upload = Upload.objects.create(filename = 'tung.xls', upload_time = datetime.now(), description = "tung", filestore = "tung.xls")
         self.spreadsheet_report = Spreadsheet_report.objects.create(description = 'tung', created_time = datetime.now())
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.assertEqual(1 + 1, 2)
 
     def test_returned_name(self):
         "Upload object should have name same as it's description"
@@ -122,3 +118,26 @@ class SimpleTest(TestCase):
         self.assertEqual(excel_function, [':= "{{body:body2}}" + "tung"']) #the excel function list should be correct
         self.assertEqual(other_info, ['tung']) #other information should be correct
         self.assertEqual(index_of_other_info, [(1,2)]) #index of other information should be correct
+
+    #function to test upload_result function
+    def test_upload_result(self):
+        #test for wrong email and password
+        message,output_link = upload_result('20121210290.xls','', 'username', 'password')
+        self.assertEqual(message, 'Wrong email or password!') #the message returned should be correct
+        self.assertEqual(output_link, '') #the returned output_link should be empty
+        
+
+def upload_result(file_name, title, username, password):
+    message = 'ok'
+    try:
+        gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
+        gd_client.ClientLogin(username, password)
+    except :
+        return "Wrong email or password!",""
+    try:
+        ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
+        entry = gd_client.Upload(ms, 'Report result of ' + title)
+        output_link = entry.GetAlternateLink().href
+    except :
+        return "Invalid file!",""
+    return message, output_link
