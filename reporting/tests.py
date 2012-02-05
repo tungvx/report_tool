@@ -28,6 +28,21 @@ class SimpleTest(TestCase):
         self.assertEqual(objects_list[0],self.upload)
         self.assertEqual(len(objects_list),1)
 
+        #test for exception, when both argument of this function is empty:
+        message, objects_list = get_list_of_object('',[])
+        self.assertEqual(message, 'The data function should be specify!')
+        self.assertEqual(objects_list, [])
+
+        #test if the function is not correct, then the correct message should be returned
+        message, objects_list = get_list_of_object('toilatung', [(1,2)])
+        self.assertEqual(message, 'Definition of data function error at cell C2')
+        self.assertEqual(objects_list, [])
+
+        #test if the function if correct, but returned value of object_list is not appropriate
+        message, objects_list = get_list_of_object('Upload.objects', [(1,2)])
+        self.assertEqual(message, 'The function you defined returns wrong result (must return a list of objects):cell C2')
+        self.assertEqual(objects_list, [])
+
     def test_extract_information_function(self):
         index_of_function = []
         index_of_head = []

@@ -43,12 +43,18 @@ def get_list_of_object(function_name, index_of_function):
         try:#try to get the list directly
             list_objects = eval(function_name)
         except :#return the error message
-            return 'Definition of data function error at cell ' + xlwt.Utils.rowcol_to_cell(index_of_function[0][0],index_of_function[0][1]), []
+            try:
+                return 'Definition of data function error at cell ' + xlwt.Utils.rowcol_to_cell(index_of_function[0][0],index_of_function[0][1]), []
+            except :
+                return 'The data function should be specify!', []
 
     #if everything is ok, then check if the list of object is a well list
     try:
         len(list_objects)
     except :
-        return 'The function you defined returns wrong result (must return a list of objects):cell ' + xlwt.Utils.rowcol_to_cell(index_of_function[0][0],index_of_function[0][1]), []
+        try:
+            return 'The function you defined returns wrong result (must return a list of objects):cell ' + xlwt.Utils.rowcol_to_cell(index_of_function[0][0],index_of_function[0][1]), []
+        except :
+            return 'The data function should be specify!', []
 
     return 'ok', list_objects
