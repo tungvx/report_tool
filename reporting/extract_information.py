@@ -1,6 +1,7 @@
 import re
 import xlwt
 from report_tool.models import Pupil,Class,School
+from reporting.models import Upload, Spreadsheet_report
 import django
 import definitions
 
