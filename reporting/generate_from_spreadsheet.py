@@ -64,9 +64,12 @@ def upload_result(file_name, title, username, password):
     try:
         gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
         gd_client.ClientLogin(username, password)
+    except :
+        return "Wrong email or password!",""
+    try:
         ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
         entry = gd_client.Upload(ms, 'Report result of ' + title)
         output_link = entry.GetAlternateLink().href
     except :
-        return "Wrong email or password!",""
+        return "Invalid file!",""
     return message, output_link

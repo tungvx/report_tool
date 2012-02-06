@@ -125,19 +125,14 @@ class SimpleTest(TestCase):
         message,output_link = upload_result('20121210290.xls','', 'username', 'password')
         self.assertEqual(message, 'Wrong email or password!') #the message returned should be correct
         self.assertEqual(output_link, '') #the returned output_link should be empty
+
+        #test for wrong filename:
+        message, output_link = upload_result('noname.xls','','toilatungfake1', 'toilatung')
+        self.assertEqual(message, 'Invalid file!')
+        self.assertEqual(output_link, '')
+
+        #test the success of function if the parameters are correct
+        message, output_link = upload_result('20121210290.xls','','toilatungfake1', 'toilatung')
+        self.assertEqual(message, 'ok')
         
 
-def upload_result(file_name, title, username, password):
-    message = 'ok'
-    try:
-        gd_client = gdata.docs.service.DocsService(source='yourCo-yourAppName-v1')
-        gd_client.ClientLogin(username, password)
-    except :
-        return "Wrong email or password!",""
-    try:
-        ms = gdata.MediaSource(file_path=FILE_GENERATE_PATH + '/' + file_name, content_type=gdata.docs.service.SUPPORTED_FILETYPES['XLS'])
-        entry = gd_client.Upload(ms, 'Report result of ' + title)
-        output_link = entry.GetAlternateLink().href
-    except :
-        return "Invalid file!",""
-    return message, output_link
