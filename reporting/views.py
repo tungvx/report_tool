@@ -14,7 +14,7 @@ from django.middleware.csrf import get_token
 from django.utils import simplejson
 from django.contrib.auth.forms import *
 from django.template import Context, loader
-from reporting.models import Upload,upload_file_form,handle_uploaded_file, Spreadsheet_report, spreadsheet_report_form
+from reporting.models import Upload,upload_file_form,handle_uploaded_file, Spreadsheet_report, spreadsheet_report_form, UserProfile, user_profile_form
 from django.http import HttpResponse,HttpResponseRedirect
 import datetime
 import reporting.definitions
@@ -27,6 +27,11 @@ import mimetypes
 import os
 from urlparse import urlparse, parse_qs
 import gdata.service
+import settings
+from django.contrib.auth.decorators import login_required
+from django.contrib import auth
+from django.contrib.auth.forms import UserCreationForm
+from django import forms
 
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__))
 UPLOAD = 'upload.html'
@@ -37,7 +42,7 @@ FILE_GENERATE_PATH = SITE_ROOT + '/generated'
 FILE_INSTRUCTION_PATH = SITE_ROOT + '/instructions'
 
 def index(request):
-    message=None
+    message= "Welcome to Reporting system"
     t = loader.get_template(os.path.join('index.html'))
     c = RequestContext(request, {
                                  'message':message,
@@ -70,7 +75,15 @@ def download_file(request):
         c = RequestContext(request)
         return render_to_response(FILE_LIST, {'message':message},context_instance = c)
 
+@login_required
 def file_list(request):
+    settings.DATABASES['default']['NAME'] = '/home/tungvx/hellodjango/tung.db'
+    print settings.DATABASES['default']['NAME']
+    from django.db import connection
+    cursor = connection.cursor()
+    cursor.execute('select name from sqlite_master')
+    a = cursor.fetchall()
+    print len(a)
     message = None
     file_list = list(Upload.objects.order_by('-upload_time'))
     spreadsheet_list = list(Spreadsheet_report.objects.order_by('-created_time'))
@@ -78,6 +91,8 @@ def file_list(request):
     return render_to_response(FILE_LIST, {'message':message,'file_list':file_list, 'spreadsheet_list':spreadsheet_list},
                               context_instance = c
                               )
+
+@login_required
 def upload_file(request):
     #This function handle upload action
     message=None
@@ -92,7 +107,7 @@ def upload_file(request):
                 now = datetime.datetime.now()
                 temp = Upload( filestore=str(now.year)+str(now.day)+str(now.month)+str(now.hour)+str(now.minute)+str(now.second)+f.name,filename =f.name,description = request.POST['description'],upload_time=datetime.datetime.now())
                 handle_uploaded_file(f, FILE_UPLOAD_PATH,temp.filestore) #Save file content to uploaded folder
-                generator = generate(temp.filestore)
+                generator = generate(temp.filestore, request.user)
                 if generator != "ok":
                     message = generator
                     c = RequestContext(request)
@@ -120,6 +135,7 @@ def upload_file(request):
                               context_instance = c
                               )
 
+@login_required
 def spreadsheet_report(request): #action to handle create report from google spreadsheet
     message = ''
     if request.method == 'POST': # if the form is submitted
@@ -195,3 +211,40 @@ def spreadsheet_report(request): #action to handle create report from google spr
 
     c = RequestContext(request)
     return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
+
+#log in action
+def login(request):
+    user = auth.authenticate(request.POST['username'], request.POST['password'])
+
+#logout
+def logout(request):
+    auth.logout(request, next_page = '/')
+
+#register function
+def register(request):
+    form = UserCreationForm()
+
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            new_user = form.save()
+            UserProfile.objects.create(user=new_user).save()
+            return HttpResponseRedirect("/")
+
+    c = RequestContext(request)
+    return render_to_response("registration/register.html", {
+        'form' : form}, context_instance = c)
+
+@login_required
+def setup_database(request):
+    message = None
+    current_user = request.user.get_profile()
+    if request.method == 'POST':
+        form = user_profile_form(request.POST, instance=current_user)
+        if form.is_valid():
+            form.save()
+    else:
+        form = user_profile_form(instance=current_user)
+    c = RequestContext(request)
+    return render_to_response("registration/database_setup.html", {
+        'form' : form}, context_instance = c)

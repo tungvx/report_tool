@@ -1,6 +1,8 @@
 from django.test import TestCase
 from report_tool.models import School, Class, Pupil
 from datetime import datetime
+import settings
+import os
 
 
 class SimpleTest(TestCase):

@@ -18,7 +18,7 @@ FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded' #path to uploaded folder
 FILE_GENERATE_PATH = SITE_ROOT + '/generated' #path to generated folder
 
 #function to generate the report, receive the file name of the input file as the input
-def generate(filename):
+def generate(filename, user):
     fname = filename #name of the input file
     try:
         #extract the specified information
@@ -26,7 +26,7 @@ def generate(filename):
     except:
         return 'Wrong input file, please check all data' #if cannot extract the data, return wrong message
     else:
-        message, list_objects = get_list_of_object(function_name,index_of_function)
+        message, list_objects = get_list_of_object(function_name,index_of_function, user)
 
         if message != 'ok':
             return message
@@ -136,7 +136,7 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
                 #if the index of the current data is the index of one specified excel function
                 if indexes_of_body[h] in index_of_excel_function:
                     #replace the data in the excel function for later formula
-                    excel_function[index_of_excel_function.index(indexes_of_body[h])] = excel_function[index_of_excel_function.index(indexes_of_body[h])].replace('{{body:' + body[h] + '}}',value)
+                    excel_function[index_of_excel_function.index(indexes_of_body[h])] = excel_function[index_of_excel_function.index(indexes_of_body[h])].replace('{{body:' + body[h] + '}}',str(value))
 
                 else:# else just write the value of the data field to the cell
                     wtsheet.write(row,col_index,value, style_list[xf_index])
@@ -159,8 +159,8 @@ def generate_output(list_objects,index_of_function,  head, index_of_head, body, 
                     if (value_of_excel_function == "remove_row"):
                         for temp_index in range(len(indexes_of_body)):
                             wtsheet.write(row,indexes_of_body[temp_index][1],"")#clear data
-                            row -= 1
-                            break
+                        row -= 1
+                        break
                     else: #else output the value of the function to the input file
                         wtsheet.write(row,col_index,value_of_excel_function,style_list[xf_index])
                 except : #if can not execute as a python function, we will try to parse it as a excel formula
@@ -203,7 +203,7 @@ def manipulate_data(list_objects,index_of_function,  head, index_of_head, body, 
                 # key (''), then the data will not be grouped
         if head != '': #if the head is not empty
             try:
-                key = eval('i.%s' % head) #try compute the value of the header
+                key = eval('i["%s"]' % head) #try compute the value of the header
             except: #if there is error, then raise exceptions
                 message =  'Error in head definition (at cell (' + str(index_of_head[0][0] + 1) + ', '
                 message = message + str(index_of_head[0][1] + 1)
@@ -212,7 +212,7 @@ def manipulate_data(list_objects,index_of_function,  head, index_of_head, body, 
                 return message #return the message to signal the failure of the function
         for y in body: #iterate all the fields in the body part of this object
             try:
-                result.append(eval('i.%s' % y)) #try to evaluate the value of the field and add them into the result
+                result.append(eval('i["%s"]' % y)) #try to evaluate the value of the field and add them into the result
             except: # if error, raise exception and return the message
                 index = body.index(y)
                 message =  'Error in body definition (at cell (' + str(indexes_of_body[index][0] + 1) + ', '

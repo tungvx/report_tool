@@ -4,6 +4,8 @@ from report_tool.models import Pupil,Class,School
 from reporting.models import Upload, Spreadsheet_report
 import django
 import definitions
+from report_tool import settings
+import sqlite3
 
 #this function is used for extracting information from a string input value
 def extract_information(index_of_function, index_of_head, body, indexes_of_body,
@@ -35,26 +37,27 @@ def extract_information(index_of_function, index_of_head, body, indexes_of_body,
     return function_name, head
 
 #function to get a list of objects containing the data
-def get_list_of_object(function_name, index_of_function):
-    try: #try to get the list from the function in definitions.py file
-        #try to get the list of objects by executing the function in definitions.py file
-        list_objects = eval('definitions.%s'%function_name)
-    except :
-        try:#try to get the list directly
-            list_objects = eval(function_name)
-        except :#return the error message
-            try:
-                return 'Definition of data function error at cell ' + xlwt.Utils.rowcol_to_cell(index_of_function[0][0],index_of_function[0][1]), []
-            except :
-                return 'The data function should be specify!', []
-
-    #if everything is ok, then check if the list of object is a well list
+def get_list_of_object(function_name, index_of_function, user):
+    if user.get_profile().database_engine == 'sqlite':
+        #connect to sqlite3 database
+        connection = sqlite3.connect(user.get_profile().database_name)
+    connection.row_factory = dict_factory
+    cursor = connection.cursor()
     try:
-        len(list_objects)
+        cursor.execute(function_name)
+        list_objects = cursor.fetchall()
     except :
-        try:
-            return 'The function you defined returns wrong result (must return a list of objects):cell ' + xlwt.Utils.rowcol_to_cell(index_of_function[0][0],index_of_function[0][1]), []
-        except :
-            return 'The data function should be specify!', []
+            try:
+                return 'Query syntax error at cell ' + xlwt.Utils.rowcol_to_cell(index_of_function[0][0],index_of_function[0][1]), []
+            except :
+                return 'The query must be specified!', []
 
     return 'ok', list_objects
+
+
+#function to convert query results into a dict
+def dict_factory(cursor, row):
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d

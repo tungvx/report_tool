@@ -29,6 +29,12 @@
         <ul>
             <li><a href="/admin" title="Admin">Admin</a></li>
             <li><a href="/help" title="Help"> help</a></li>
+            {% if user.is_authenticated %}
+                <li><a href="{% url logout %}?next=/" title="Logout"> Logout</a></li>
+            {% else %}
+                <li><a href="{% url login %}" title="Signin"> Login</a></li>
+                <li><a href="{% url register %}" title="Signup"> Sign up</a></li>
+            {% endif %}
         </ul>
     </div>
 
@@ -37,6 +43,9 @@
             <li><a href="{% url upload_file %}" title="Mở trình quản trị sẵn có của hệ thống">Add new report using excel</a></li>
             <li><a href="{% url spreadsheet_report %}" title="Mở trình quản trị sẵn có của hệ thống">Add new report using google spreadsheet</a></li>
             <li><a href="{% url file_list %}" title="Mở danh sách upload">Report list</a></li>
+            {% if user.is_authenticated %}
+                <li><a href="{% url database_setup %}" title="Mở danh sách upload">Set up your database</a></li>
+            {% endif %}
         </ul>		
     </nav>
 </header>

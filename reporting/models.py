@@ -38,3 +38,32 @@ def handle_uploaded_file(f,location,filename):
 class spreadsheet_report_form(forms.Form):
     description   = forms.CharField(max_length=255,required=True)
     spreadsheet_link = forms.CharField(max_length=255,required=False)
+
+DATABASE_ENGINE_CHOICES = (
+    ('odbc', 'odbc'),
+    ('access', 'access'),
+    ('mssql', 'mssql'),
+    ('mysql', 'mysql'),
+    ('mxodbc', 'mxodbc'),
+    ('mxoracle', 'mxoracle'),
+    ('oci8', 'oci8'),
+    ('odbc_mssql', 'odbc_mssql'),
+    ('vfp', 'vfp'),
+    ('sqlite', 'sqlite'),
+    ('postgres', 'postgres'),
+)
+
+#class User profile
+class UserProfile(models.Model):
+    user = models.OneToOneField(User)
+    database_engine = models.CharField(max_length=200, choices=DATABASE_ENGINE_CHOICES)
+    database_name = models.CharField(max_length=200, help_text="Use puns liberally")
+    database_user = models.CharField(max_length=200,  blank=True)
+    database_password = models.CharField(max_length=200,  blank=True)
+    database_host = models.CharField(max_length=200,  blank=True)
+    database_port = models.CharField(max_length=200,  blank=True)
+
+class user_profile_form(forms.ModelForm):
+    class Meta:
+        model = UserProfile
+        exclude = ('user',)
