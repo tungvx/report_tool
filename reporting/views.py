@@ -77,13 +77,6 @@ def download_file(request):
 
 @login_required
 def file_list(request):
-    settings.DATABASES['default']['NAME'] = '/home/tungvx/hellodjango/tung.db'
-    print settings.DATABASES['default']['NAME']
-    from django.db import connection
-    cursor = connection.cursor()
-    cursor.execute('select name from sqlite_master')
-    a = cursor.fetchall()
-    print len(a)
     message = None
     file_list = list(Upload.objects.order_by('-upload_time'))
     spreadsheet_list = list(Spreadsheet_report.objects.order_by('-created_time'))
