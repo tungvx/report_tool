@@ -124,7 +124,7 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'report_tool.urls'
 
 TEMPLATE_DIRS = (
-        "report_tool/template",
+        "report_tool/templates",
     # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
     # Always use forward slashes, even on Windows.
     # Don't forget to use absolute paths, not relative paths.
@@ -170,4 +170,6 @@ LOGGING = {
     }
 }
 
-AUTH_PROFILE_MODULE = 'reporting.UserProfile'
+AUTH_PROFILE_MODULE = 'report_tool.UserProfile'
+
+DATABASE_PATH = SITE_ROOT + '/databases'

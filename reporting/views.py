@@ -14,7 +14,7 @@ from django.middleware.csrf import get_token
 from django.utils import simplejson
 from django.contrib.auth.forms import *
 from django.template import Context, loader
-from reporting.models import Upload,upload_file_form,handle_uploaded_file, Spreadsheet_report, spreadsheet_report_form, UserProfile, user_profile_form
+from reporting.models import Upload,upload_file_form,handle_uploaded_file, Spreadsheet_report, spreadsheet_report_form
 from django.http import HttpResponse,HttpResponseRedirect
 import datetime
 import reporting.definitions
@@ -40,6 +40,7 @@ FILE_LIST = 'filelist.html'
 FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded'
 FILE_GENERATE_PATH = SITE_ROOT + '/generated'
 FILE_INSTRUCTION_PATH = SITE_ROOT + '/instructions'
+DATABASE_PATH = SITE_ROOT + '/databases'
 
 def index(request):
     message= "Welcome to Reporting system"
@@ -75,7 +76,7 @@ def download_file(request):
         c = RequestContext(request)
         return render_to_response(FILE_LIST, {'message':message},context_instance = c)
 
-@login_required
+
 def file_list(request):
     message = None
     file_list = list(Upload.objects.order_by('-upload_time'))
@@ -85,7 +86,7 @@ def file_list(request):
                               context_instance = c
                               )
 
-@login_required
+
 def upload_file(request):
     #This function handle upload action
     message=None
@@ -128,7 +129,7 @@ def upload_file(request):
                               context_instance = c
                               )
 
-@login_required
+
 def spreadsheet_report(request): #action to handle create report from google spreadsheet
     message = ''
     if request.method == 'POST': # if the form is submitted
@@ -187,57 +188,7 @@ def spreadsheet_report(request): #action to handle create report from google spr
             message = 'Please enter the required fields'
         
     else: #if user want to create new report from spreadsheet
-#        request.session['token']=None
-#        temp_token = request.GET.get('token')
-#        if temp_token:
-#            request.session['token'] = temp_token
-#        if request.session.get('token') == None:
-#            host = request.get_host()
-#            next = 'http://' + str(host) + '/add_spreadsheet'
-#            scopes = ['https://docs.google.com/feeds/', 'https://spreadsheets.google.com/feeds/']
-#            secure = True  # set secure=True to request a secure AuthSub token
-#            session = True
-#            return redirect(gdata.service.GenerateAuthSubRequestUrl(next, scopes, secure=secure, session=session))
-        #if user is authenticated:
-        
         form = spreadsheet_report_form()
 
     c = RequestContext(request)
     return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
-
-#log in action
-def login(request):
-    user = auth.authenticate(request.POST['username'], request.POST['password'])
-
-#logout
-def logout(request):
-    auth.logout(request, next_page = '/')
-
-#register function
-def register(request):
-    form = UserCreationForm()
-
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            new_user = form.save()
-            UserProfile.objects.create(user=new_user).save()
-            return HttpResponseRedirect("/")
-
-    c = RequestContext(request)
-    return render_to_response("registration/register.html", {
-        'form' : form}, context_instance = c)
-
-@login_required
-def setup_database(request):
-    message = None
-    current_user = request.user.get_profile()
-    if request.method == 'POST':
-        form = user_profile_form(request.POST, instance=current_user)
-        if form.is_valid():
-            form.save()
-    else:
-        form = user_profile_form(instance=current_user)
-    c = RequestContext(request)
-    return render_to_response("registration/database_setup.html", {
-        'form' : form}, context_instance = c)

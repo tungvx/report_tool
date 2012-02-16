@@ -3,15 +3,19 @@ try:
 except ImportError:
   from elementtree import ElementTree
 
-import gdata
-import gdata.spreadsheet.service
-import gdata.service
-import gdata.spreadsheet
-import gdata.docs
-import gdata.docs.data
-import gdata.docs.client
-import gdata.docs.service
-import gdata.spreadsheet.service
+try:
+    import gdata
+    import gdata.spreadsheet.service
+    import gdata.service
+    import gdata.spreadsheet
+    import gdata.docs
+    import gdata.docs.data
+    import gdata.docs.client
+    import gdata.docs.service
+    import gdata.spreadsheet.service
+except :
+    ''
+
 import datetime
 import os
 from report import generate
