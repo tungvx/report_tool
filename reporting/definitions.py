@@ -12,7 +12,10 @@
 
 #def tk_hl_hk_dh_hk1():
 
-from school.models import Mark, Pupil
+try:
+    from school.models import Mark, Pupil
+except :
+    print ''
 
 def mark_for_class(class_name):
     return Mark.objects.filter(student_id__class_id__name = class_name)
