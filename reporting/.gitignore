@@ -1,0 +1,9 @@
+bin
+build
+include
+lib
+.Python
+.svn
+*.pyc
+*.xls
+.idea/

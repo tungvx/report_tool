@@ -17,7 +17,7 @@
             <tr>
                 <td align="center"><a href="{% url download_file %}?filename={{ file.filestore }}&path=FILE_UPLOAD_PATH"/>{{ file.filename }}</td>
                 <td align="center">{{ file.description }}</td>
-                <td align="center"><a href="{% url download_file %}?filename={{ file.filestore }}&path=FILE_GENERATE_PATH"/>
+                <td align="center"><a href="{% url view_report %}?filename={{ file.filestore }}"/>
                 Download</td>
                 <td align="center">{{ file.upload_time }}</td>
             </tr>

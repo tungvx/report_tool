@@ -21,7 +21,8 @@ except :
 def extract_information(index_of_function, index_of_group, body, indexes_of_body,
                         index_of_excel_function, excel_function, value, row_x, col_x, other_info, index_of_other_info,
                         body_input, indexes_of_body_input, head, index_of_head, head_input, index_of_head_input,
-                        foot, index_of_foot, foot_input, index_of_foot_input):
+                        foot, index_of_foot, foot_input, index_of_foot_input,
+                        once, index_of_once, once_input, index_of_once_input):
     function_name = ''
     group = ''
     value = unicode(value)
@@ -50,7 +51,13 @@ def extract_information(index_of_function, index_of_group, body, indexes_of_body
 
                     foot.append(temp1[5:]) #store the field of foot
                     index_of_foot.append((row_x, col_x))
-                        
+                elif (temp1.startswith('once:')): #if the field is the footer
+                    if (row_x, col_x) not in index_of_once_input:
+                        once_input.append(value) # add value to foot array
+                        index_of_once_input.append((row_x, col_x)) #also store index of foot
+
+                    once.append(temp1[5:]) #store the field of foot
+                    index_of_once.append((row_x, col_x))
                 else:
                     if (row_x, col_x) not in indexes_of_body_input:
                         body_input.append(value)
@@ -67,7 +74,9 @@ def extract_information(index_of_function, index_of_group, body, indexes_of_body
     return function_name, group
 
 #function to get a list of objects containing the data
-def get_list_of_object(function_name, index_of_function, user):
+def get_list_of_object(function_name, index_of_function, request):
+    if function_name == '':
+        return 'ok', []
     #try to get list of objects from definitions.py file, or execute the fuction directly
     try:
         list_objects = eval('definitions.%s' %function_name)
@@ -78,13 +87,13 @@ def get_list_of_object(function_name, index_of_function, user):
             print 'error'
     #if the list is not empty, then return the list
     try:
-        if len(list_objects) > 0:
+        if len(list_objects) >= 0:
             return 'ok', list_objects
     except :
         print 'error'
 
     try:
-        current_user = user.get_profile() #get user profile
+        current_user = request.user.get_profile() #get user profile
     except :
         return 'You must set up you database!', []
 

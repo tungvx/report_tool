@@ -11,35 +11,57 @@ import operator
 from itertools import groupby
 import os
 from extract_information import extract_information, get_list_of_object
+from django.http import HttpResponse, HttpResponseRedirect
 
 SITE_ROOT = os.path.dirname(os.path.realpath(__file__)) #path of the app
 FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded' #path to uploaded folder
 FILE_GENERATE_PATH = SITE_ROOT + '/generated' #path to generated folder
 
 #function to generate the report, receive the file name of the input file as the input
-def generate(filename, user):
+def generate(filename, request):
     fname = filename #name of the input file
-    try:
-        #extract the specified information
-        function_name, index_of_function, group, index_of_group, body, indexes_of_body, input_file,index_of_excel_function, excel_function, body_input, index_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input = fileExtractor(fname)
-    except:
-        return 'Wrong input file, please check all data' #if cannot extract the data, return wrong message
-    else:
-        message, list_objects = get_list_of_object(function_name,index_of_function, user)
+    response = HttpResponse(mimetype='application/ms-excel')
+    response['Content-Disposition'] = u'attachment; filename=%s' % fname
 
-        if message != 'ok':
-            return message
-        #generate the report to the excel file, message here is the signal of the success
-        message = generate_output(list_objects, index_of_function, group, index_of_group, body,
-                                  indexes_of_body, input_file,fname, index_of_excel_function, excel_function,
-                                  body_input, index_of_body_input,
-                                  head, index_of_head, head_input, index_of_head_input,
-                                  foot, index_of_foot, foot_input, index_of_foot_input)
-        return message
-    return 'ok'
+    #read input file, style list:
+    input_book = xlrd.open_workbook('%s/%s' % (FILE_UPLOAD_PATH, filename), formatting_info=True)     #Read excel file for get data
+    style_list = copy2(input_book) #copy the content and the format(style) of the input file into wtbook
+    #create output file:
+    wtbook = xlwt.Workbook(encoding='utf-8') #create new workbook
+
+    for i in range(input_book.nsheets):
+        sheet = input_book.sheet_by_index(i) # Get the first sheet
+
+        try:
+            #extract the specified information
+            function_name, index_of_function, group, index_of_group, body, indexes_of_body, index_of_excel_function, excel_function, body_input, index_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input, once, index_of_once, once_input, index_of_once_input = fileExtractor(sheet)
+        except:
+            return 'Wrong input file, please check all data', response #if cannot extract the data, return wrong message
+        else:
+            message, list_objects = get_list_of_object(function_name,index_of_function, request)
+
+            if message != 'ok':
+                return message, response
+            #generate the report to the excel file, message here is the signal of the success
+            message = generate_output(list_objects, index_of_function, group, index_of_group, body,
+                                      indexes_of_body, fname, index_of_excel_function, excel_function,
+                                      body_input, index_of_body_input,
+                                      head, index_of_head, head_input, index_of_head_input,
+                                      foot, index_of_foot, foot_input, index_of_foot_input, request,
+                                      once, index_of_once, once_input, index_of_once_input,
+                                      sheet, style_list, wtbook)
+
+
+            if message != 'ok':
+                return message, response
+
+    wtbook.save(response)
+    if request.session.get('is_spreadsheet'):
+        wtbook.save('%s/%s' % (FILE_GENERATE_PATH, fname))
+    return 'ok', response
 
 #function to extract specifications from the template file
-def fileExtractor(file):
+def fileExtractor(sheet):
     function_name = ''#name of the function which returns the list of objects
     group = '' #group
     index_of_group = [] #index of group
@@ -58,9 +80,11 @@ def fileExtractor(file):
     index_of_foot = []
     foot_input = []
     index_of_foot_input = []
+    once = []
+    index_of_once = []
+    once_input = []
+    index_of_once_input = []
     
-    fd = xlrd.open_workbook('%s/%s' % (FILE_UPLOAD_PATH, file), formatting_info=True)     #Read excel file for get data
-    sheet = fd.sheet_by_index(0) # Get the first sheet
     #read information user specified
     for col_x in range(sheet.ncols):
         for row_x in range(sheet.nrows):
@@ -68,14 +92,14 @@ def fileExtractor(file):
             if value: #if the cell contains data
 
                 #call the function to extract information
-                temp_function_name, temp_group = extract_information(index_of_function, index_of_group, body, indexes_of_body,index_of_excel_function, excel_function, value, row_x, col_x,[],[], body_input, indexes_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input)
+                temp_function_name, temp_group = extract_information(index_of_function, index_of_group, body, indexes_of_body,index_of_excel_function, excel_function, value, row_x, col_x,[],[], body_input, indexes_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input, once, index_of_once, once_input, index_of_once_input)
 
                 #append the function_name and the group
                 function_name += temp_function_name
                 group += temp_group
-    return function_name, index_of_function, group, index_of_group, body, indexes_of_body,fd, index_of_excel_function, excel_function, body_input, indexes_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input
+    return function_name, index_of_function, group, index_of_group, body, indexes_of_body, index_of_excel_function, excel_function, body_input, indexes_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input, once, index_of_once, once_input, index_of_once_input
 
-def generate_output(list_objects,index_of_function,  group, index_of_group, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function, body_input, index_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input):
+def generate_output(list_objects,index_of_function,  group, index_of_group, body, indexes_of_body,fname, index_of_excel_function, excel_function, body_input, index_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input, request, once, index_of_once, once_input, index_of_once_input, sheet, style_list, wtbook):
     message = 'ok' #message to be returned to signal the success of the function
 
     #back up excel_function
@@ -95,199 +119,246 @@ def generate_output(list_objects,index_of_function,  group, index_of_group, body
     dict = {}
 
     #manipulate the data
-    message = manipulate_data(list_objects,index_of_function,  group, index_of_group, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function, dict, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input)
+    message = manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, dict, head, index_of_head, foot, index_of_foot, once, index_of_once, once_input, index_of_once_input, request)
 
     #if something's wrong, the return the message to raise exception
     if message != 'ok':
         return message
     
-    keys =  sorted(dict.keys()) #sort the keys
-
-    sheet = input_file.sheet_by_index(0) # Get the first sheet
-    style_list = copy2(input_file) #copy the content and the format(style) of the input file into wtbook
-    wtbook = xlwt.Workbook(encoding='utf-8') #create new workbook
+    keys =  dict.keys() #sort the keys
+    
     wtsheet = wtbook.add_sheet(sheet.name, cell_overwrite_ok=True)# create new sheet named as of sheet
 
     #copy column widths to output file
     for i in range(sheet.ncols):
         wtsheet.col(i).width = sheet.computed_column_width(i)
 
+    #if function data is not specified:
+    if len(index_of_function) == 0:
+        #just copy the content of input file to ouput file:
+        for row_index in range(sheet.nrows):
+            if (sheet.rowinfo_map.get(row_index)):
+                wtsheet.row(row_index).height = sheet.rowinfo_map.get(row_index).height #copy the height
+            for col_index in range(sheet.ncols):
+                write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row_index, sheet.cell(row_index, col_index).value)
+        return message
+
+    #get row of body part
+    if len(indexes_of_body) != 0:
+        row_of_body = indexes_of_body[0][0]
+    else:
+        row_of_body = sheet.nrows - 1
+
     #copy information between beginning of input file and row of body part:
-    for row_index in range(indexes_of_body[0][0]):
+    for row_index in range(row_of_body):
         if (sheet.rowinfo_map.get(row_index)):
                 wtsheet.row(row_index).height = sheet.rowinfo_map.get(row_index).height #copy the height
         for col_index in range(sheet.ncols):
             write_to_sheet(row_index,col_index, sheet, wtsheet, style_list, row_index, sheet.cell(row_index, col_index).value)
 
+    if len(index_of_group) != 0:
+        col_index = index_of_group[0][1] #get index of column of the group
+        row_index = index_of_group[0][0] #get index of column of the group
+        write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row_index, '')
+
     #remove the content at the position of the function which returns the data, remains the format of the cell
     write_to_sheet(index_of_function[0][0],index_of_function[0][1],sheet, wtsheet, style_list, index_of_function[0][0], '')
 
-    #begin to write the data fields to wtbook
-    row = 0 #variable used to travel all the rows in the wtsheet
-    start_row = 0 #the row which is the starting for copying the data of the rows between the row of the group
-        # and the row of the body
-    
-    if len(index_of_group) != 0: # if the group is not empty, we start at the row of the group
-        row = index_of_group[0][0]
-        start_row = row + 1
-    else: #else we start with the row above the body part
-        row = indexes_of_body[0][0]-2
-        start_row = row + 1
+    if len(indexes_of_body) != 0:
+        #begin to write the data fields to wtbook
+        row = 0 #variable used to travel all the rows in the wtsheet
+        start_row = 0 #the row which is the starting for copying the data of the rows between the row of the group
+            # and the row of the body
 
-    for l in range(len(dict)):#iterate all the elements of the dict
-        key = keys[l] #get the key
-        if len(index_of_group) != 0: #if the group is not empty
-            row_index = index_of_group[0][0] #get index of row of the group
+        if len(index_of_group) != 0: # if the group is not empty, we start at the row of the group
+            row = index_of_group[0][0]
+            start_row = row + 1
+        else: #else we start with the row above the body part
+            row = indexes_of_body[0][0]-2
+            start_row = row + 1
+            
+        for l in range(len(dict)):#iterate all the elements of the dict
+            key = keys[l] #get the key
+            if len(index_of_group) != 0: #if the group is not empty
+                row_index = index_of_group[0][0] #get index of row of the group
 
-            #set row height
-            if (sheet.rowinfo_map.get(row_index)):
-                wtsheet.row(row).height = sheet.rowinfo_map.get(row_index).height #copy the height
+                #set row height
+                if (sheet.rowinfo_map.get(row_index)):
+                    wtsheet.row(row).height = sheet.rowinfo_map.get(row_index).height #copy the height
 
-            #copy all data of the row containing the group:
-            for col_index in range(sheet.ncols):
-                write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, sheet.cell(row_index, col_index).value)
+                #copy all data of the row containing the group:
+                for col_index in range(sheet.ncols):
+                    write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, sheet.cell(row_index, col_index).value)
 
-            col_index = index_of_group[0][1] #get index of column of the group
-            #copy the value and the formats of that cell to the current row and the same index
-            #this is the part of the grouping data. The group is repeated at each key
-            write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, '')
+                col_index = index_of_group[0][1] #get index of column of the group
+                #copy the value and the formats of that cell to the current row and the same index
+                #this is the part of the grouping data. The group is repeated at each key
+                write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, '')
 
-        #copy the information in rows between the row of the group and the row of the body
-        for row_index in range(start_row, indexes_of_body[0][0], 1):
-            row  += 1 # increase the current row by one
-            if (sheet.rowinfo_map.get(row_index)):
-                wtsheet.row(row).height = sheet.rowinfo_map.get(row_index).height #copy the height
-            for col_index in range(sheet.ncols): #iterate all the columns
-                write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, sheet.cell(row_index, col_index).value)
+            #copy the information in rows between the row of the group and the row of the body
+            for row_index in range(start_row, indexes_of_body[0][0], 1):
+                row  += 1 # increase the current row by one
+                if (sheet.rowinfo_map.get(row_index)):
+                    wtsheet.row(row).height = sheet.rowinfo_map.get(row_index).height #copy the height
+                for col_index in range(sheet.ncols): #iterate all the columns
+                    write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, sheet.cell(row_index, col_index).value)
 
-        #write data fields to wtsheet
-        values = dict.get(key) #get the list of the data fields of this key
+            #write data fields to wtsheet
+            values = dict.get(key) #get the list of the data fields of this key
 
-        head_values = values[0]#values of header
+            head_values = values[0]#values of header
 
-        foot_values = values[1] #values of foot
+            foot_values = values[1] #values of foot
 
-        #replace value head_values into head input
-        for h in range(len(index_of_head)):
-            value = head_values[h]
-            head_input[index_of_head_input.index(index_of_head[h])] = head_input[index_of_head_input.index(index_of_head[h])].replace('{{head:' + head[h] + '}}', unicode(value))
+            #replace value head_values into head input
+            for h in range(len(index_of_head)):
+                value = head_values[h]
+                head_input[index_of_head_input.index(index_of_head[h])] = head_input[index_of_head_input.index(index_of_head[h])].replace('{{head:' + head[h] + '}}', unicode(value))
 
-        #write head values to output file:
-        for h in range(len(index_of_head_input)):
-            col_index = index_of_head_input[h][1]
-            row_index = index_of_head_input[h][0]
-            write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (indexes_of_body[0][0] - row_index) + 1, head_input[h])
+            #write head values to output file:
+            for h in range(len(index_of_head_input)):
+                col_index = index_of_head_input[h][1]
+                row_index = index_of_head_input[h][0]
+                write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (indexes_of_body[0][0] - row_index) + 1, head_input[h])
 
-        increase_row = 1
-        for i in range(2, len(values)): #iterate the list to get all the data fields
-            row += increase_row #increase the current row
-            #set height of the current row equal to the row of the spcified body row
-            wtsheet.row(row).height = sheet.rowinfo_map.get(indexes_of_body[0][0]).height 
-            for h in range(len(indexes_of_body)):#iterate all the fields
-                value = values[i][h] # the value of the current data
-                #if the index of the current data is the index of one specified excel function
-                if indexes_of_body[h] in index_of_excel_function:
-                    #replace the data in the excel function for later formula
-                    excel_function[index_of_excel_function.index(indexes_of_body[h])] = excel_function[index_of_excel_function.index(indexes_of_body[h])].replace('{{' + body[h] + '}}',unicode(value))
+            increase_row = 1
+            for i in range(2, len(values)): #iterate the list to get all the data fields
+                row += increase_row #increase the current row
+                #set height of the current row equal to the row of the spcified body row
+                wtsheet.row(row).height = sheet.rowinfo_map.get(indexes_of_body[0][0]).height
+                for h in range(len(indexes_of_body)):#iterate all the fields
+                    value = values[i][h] # the value of the current data
+                    #if the index of the current data is the index of one specified excel function
+                    if indexes_of_body[h] in index_of_excel_function:
+                        #replace the data in the excel function for later formula
+                        excel_function[index_of_excel_function.index(indexes_of_body[h])] = excel_function[index_of_excel_function.index(indexes_of_body[h])].replace('{{' + body[h] + '}}',unicode(value))
 
-                else:# else just replace the value into the body input
-                    body_input[index_of_body_input.index(indexes_of_body[h])] = body_input[index_of_body_input.index(indexes_of_body[h])].replace('{{' + body[h] + '}}',unicode(value))
+                    else:# else just replace the value into the body input
+                        body_input[index_of_body_input.index(indexes_of_body[h])] = body_input[index_of_body_input.index(indexes_of_body[h])].replace('{{' + body[h] + '}}',unicode(value))
 
 
-            #write body_input to the output file:
-            for h in range(len(index_of_body_input)):
-                col_index = index_of_body_input[h][1] #get current column index of body
-                row_index = index_of_body_input[h][0] #get current row index of body
-                #write to output file
-                temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, ' '.join(body_input[h].split()))
-                if temp_increase_row > increase_row:
-                    increase_row = temp_increase_row
+                #write body_input to the output file:
+                for h in range(len(index_of_body_input)):
+                    col_index = index_of_body_input[h][1] #get current column index of body
+                    row_index = index_of_body_input[h][0] #get current row index of body
+                    #write to output file
+                    temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, ' '.join(body_input[h].split()))
+                    if temp_increase_row > increase_row:
+                        increase_row = temp_increase_row
 
-            #write excel functions to the output file:
-            for h in range(len(index_of_excel_function)):
-                col_index = index_of_excel_function[h][1] # get column index of the cell contain excel function
-                row_index = index_of_excel_function[h][0] # get row index of the cell contain excel function
-                #get the excel function:
-                temp_excel_function = excel_function[h]
-                #remove := at the beginning
-                temp_excel_function = temp_excel_function[2:]
-                # process error for string in the input of the excel function:
-                temp_excel_function = temp_excel_function.replace(unichr(8220),'"').replace(unichr(8221),'"')
-                # try to execute the excel function as a python function, and write the result to the ouput sheet
-                try:
-                    value_of_excel_function = eval(temp_excel_function)
-                    #if the value of the function is "remove_row", the delete the current data row
-                    if (value_of_excel_function == "remove_row"):
-                        for temp_index in range(len(indexes_of_body)):
-                            #clear data and get increase row
-                            temp_increase_row = write_to_sheet(row_index, indexes_of_body[temp_index][1], sheet, wtsheet, style_list, row, "")
+                #write excel functions to the output file:
+                for h in range(len(index_of_excel_function)):
+                    col_index = index_of_excel_function[h][1] # get column index of the cell contain excel function
+                    row_index = index_of_excel_function[h][0] # get row index of the cell contain excel function
+                    #get the excel function:
+                    temp_excel_function = excel_function[h]
+                    #remove := at the beginning
+                    temp_excel_function = temp_excel_function[2:]
+                    # process error for string in the input of the excel function:
+                    temp_excel_function = temp_excel_function.replace(unichr(8220),'"').replace(unichr(8221),'"')
+                    # try to execute the excel function as a python function, and write the result to the ouput sheet
+                    try:
+                        value_of_excel_function = eval(temp_excel_function)
+                        #if the value of the function is "remove_row", the delete the current data row
+                        if (value_of_excel_function == "remove_row"):
+                            for temp_index in range(len(indexes_of_body)):
+                                #clear data and get increase row
+                                temp_increase_row = write_to_sheet(row_index, indexes_of_body[temp_index][1], sheet, wtsheet, style_list, row, "")
+                                if temp_increase_row > increase_row:
+                                    increase_row = temp_increase_row
+                            row -= 1
+                            break
+                        else: #else output the value of the function to the input file
+                            temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, value_of_excel_function)
                             if temp_increase_row > increase_row:
                                 increase_row = temp_increase_row
-                        row -= 1
-                        break
-                    else: #else output the value of the function to the input file
-                        temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, value_of_excel_function)
-                        if temp_increase_row > increase_row:
-                            increase_row = temp_increase_row
-                except : #if can not execute as a python function, we will try to parse it as a excel formula
-                    try:
-                        temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, xlwt.Formula(temp_excel_function))
-                        if temp_increase_row > increase_row:
-                            increase_row = temp_increase_row
-                    except : #if all the two above cases are failed, the raise syntax error
-                        message =  'Error in excel formula definition (at cell (' + str(index_of_excel_function[h][0] + 1) + ', '
-                        message = message + str(index_of_excel_function[h][1] + 1)
-                        message = message + ')): Syntax error '
-                        return message
+                    except : #if can not execute as a python function, we will try to parse it as a excel formula
+                        try:
+                            temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, xlwt.Formula(temp_excel_function))
+                            if temp_increase_row > increase_row:
+                                increase_row = temp_increase_row
+                        except : #if all the two above cases are failed, the raise syntax error
+                            message =  'Error in excel formula definition (at cell (' + str(index_of_excel_function[h][0] + 1) + ', '
+                            message = message + str(index_of_excel_function[h][1] + 1)
+                            message = message + ')): Syntax error '
+                            return message
 
-            #copy format of other cell in the body row
-            row_index = index_of_body_input[0][0]
-            for col_index in range(sheet.ncols):
-                if (row_index, col_index) not in index_of_body_input and (row_index, col_index) not in index_of_excel_function:
-                    write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, '')
+                #copy format of other cell in the body row
+                row_index = index_of_body_input[0][0]
+                for col_index in range(sheet.ncols):
+                    if (row_index, col_index) not in index_of_body_input and (row_index, col_index) not in index_of_excel_function:
+                        write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, '')
 
-            #restore excel_function:
-            excel_function = backup_excel_function[:]
+                #restore excel_function:
+                excel_function = backup_excel_function[:]
 
-            #restore body_input
-            body_input = backup_body_input[:]
+                #restore body_input
+                body_input = backup_body_input[:]
 
-        #copy the information provided by user at the end of the report to the end of the output file
-        for row_index in range(indexes_of_body[0][0] + 1, sheet.nrows, 1):
+            #copy the information provided by user at the end of the report to the end of the output file
+            for row_index in range(indexes_of_body[0][0] + 1, sheet.nrows, 1):
+                row += 1
+                if (sheet.rowinfo_map.get(row_index)):
+                    wtsheet.row(row).height = sheet.rowinfo_map.get(row_index).height #copy the height
+                for col_index in range(sheet.ncols):
+                    #copy the value and the format
+                    write_to_sheet(row_index,col_index,sheet, wtsheet, style_list, row, sheet.cell(row_index,col_index).value)
+
+            #insert foot values to the output file:
+            #replace value foot_values into foot input
+            for f in range(len(index_of_foot)):
+                value = foot_values[f]
+                try:
+                    foot_input[index_of_foot_input.index(index_of_foot[f])] = foot_input[index_of_foot_input.index(index_of_foot[f])].replace('{{foot:' + foot[f] + '}}', unicode(value))
+                except :
+                    foot_input[index_of_foot_input.index(index_of_foot[f])] = foot_input[index_of_foot_input.index(index_of_foot[f])].replace('{{foot:' + foot[f] + '}}', str(value).decode('utf-8'))
+
+            #write foot values to output file:
+            for f in range(len(index_of_foot_input)):
+                col_index = index_of_foot_input[f][1]
+                row_index = index_of_foot_input[f][0]
+                write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (sheet.nrows - row_index) + 1, foot_input[f])
+
+            #restore head_input
+            head_input = backup_head_input[:]
+
+            #restore foot_input
+            foot_input = backup_foot_input[:]
+
             row += 1
-            if (sheet.rowinfo_map.get(row_index)):
-                wtsheet.row(row).height = sheet.rowinfo_map.get(row_index).height #copy the height
-            for col_index in range(sheet.ncols):
-                #copy the value and the format
-                write_to_sheet(row_index,col_index,sheet, wtsheet, style_list, row, sheet.cell(row_index,col_index).value)
 
-        #insert foot values to the output file:
-        #replace value head_values into head input
-        for f in range(len(index_of_foot)):
-            value = foot_values[f]
-            foot_input[index_of_foot_input.index(index_of_foot[f])] = foot_input[index_of_foot_input.index(index_of_foot[f])].replace('{{foot:' + foot[f] + '}}', unicode(value))
+    #write once_input to output file
+    for i in range(len(once_input)):
+        row_index = index_of_once_input[i][0]
+        col_index = index_of_once_input[i][1]
+        write_to_sheet(row_index,col_index, sheet, wtsheet, style_list, row_index, once_input[i])
 
-        #write foot values to output file:
-        for f in range(len(index_of_foot_input)):
-            col_index = index_of_foot_input[f][1]
-            row_index = index_of_foot_input[f][0]
-            write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (sheet.nrows - row_index) + 1, foot_input[f])
-
-        #restore head_input
-        head_input = backup_head_input[:]
-
-        #restore foot_input
-        foot_input = backup_foot_input[:]
-
-        row += 2 #each group are separated by one row, for beauty
-
-    #save output
-    wtbook.save('%s/%s' % (FILE_GENERATE_PATH, fname))
     return message
 
 # This function is used for manipulating the data:
-def manipulate_data(list_objects,index_of_function,  group, index_of_group, body, indexes_of_body, input_file,fname, index_of_excel_function, excel_function, dict, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input):
+def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, dict, head, index_of_head, foot, index_of_foot, once, index_of_once, once_input, index_of_once_input, request):
     message = 'ok'
+
+    #compute values for once:
+    if len(list_objects) > 0:   
+        a = list_objects[0]
+        for o in range(len(once)):
+            try:
+                value = eval('a["%s"]' %once[o])
+            except :
+                try:
+                    value = eval('a.%s'%once[o])
+                except :
+                    value = ''
+
+            try:
+                once_input[index_of_once_input.index(index_of_once[o])] = once_input[index_of_once_input.index(index_of_once[o])].replace('{{once:' + once[o] + '}}', unicode(value))
+            except :
+                once_input[index_of_once_input.index(index_of_once[o])] = once_input[index_of_once_input.index(index_of_once[o])].replace('{{once:' + once[o] + '}}', str(value).decode('utf-8'))
+    else:
+        for o in range(len(once)):
+            value = ''
+            once_input[index_of_once_input.index(index_of_once[o])] = once_input[index_of_once_input.index(index_of_once[o])].replace('{{once:' + once[o] + '}}', unicode(value))
 
     # compute values of the data fields and put them into the dict
     for i in list_objects:
@@ -312,7 +383,7 @@ def manipulate_data(list_objects,index_of_function,  group, index_of_group, body
             except: # if error, raise exception and return the message
                 try:
                     body_value = eval('i.%s'%y)
-                    if body_value:
+                    if body_value != None:
                         result.append(body_value)
                     else:
                         result.append('')
@@ -324,7 +395,7 @@ def manipulate_data(list_objects,index_of_function,  group, index_of_group, body
                     message = message + y + '; or the function you defined returns wrong result (must return a list of objects)'
                     return message
         result = tuple(result)# convert to tupple: [] to ()
-
+        
         if dict.get(key): # if the key allready exists, trivially append the result to this key
             dict[key].append(result)
         else: #else create a  new key, and append the result
@@ -337,7 +408,7 @@ def manipulate_data(list_objects,index_of_function,  group, index_of_group, body
                 except :
                     try: #for django models
                         head_value = eval('i.%s'%h)
-                        if head_value:
+                        if head_value != None:
                             head_result.append(head_value) #if head result is not None
                         else:
                             head_result.append('')
@@ -360,7 +431,7 @@ def manipulate_data(list_objects,index_of_function,  group, index_of_group, body
                 except :
                     try: #for django models
                         foot_value = eval('i.%s'%f)
-                        if (foot_value):
+                        if (foot_value != None):
                             foot_result.append(foot_value) #if the foot value s not None
                         else:
                             foot_result.append('')

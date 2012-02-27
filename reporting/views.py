@@ -101,7 +101,7 @@ def upload_file(request):
                 now = datetime.datetime.now()
                 temp = Upload( filestore=str(now.year)+str(now.day)+str(now.month)+str(now.hour)+str(now.minute)+str(now.second)+f.name,filename =f.name,description = request.POST['description'],upload_time=datetime.datetime.now())
                 handle_uploaded_file(f, FILE_UPLOAD_PATH,temp.filestore) #Save file content to uploaded folder
-                generator = generate(temp.filestore, request.user)
+                generator, response = generate(temp.filestore, request)
                 if generator != "ok":
                     message = generator
                     c = RequestContext(request)
@@ -163,7 +163,7 @@ def spreadsheet_report(request): #action to handle create report from google spr
                 return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
             
             # from the key of the spreadsheet, generate the report
-            generator, output_link,title = generate_from_spreadsheet(spreadsheet_key, request.session.get('token'), username, password)
+            generator, output_link,title = generate_from_spreadsheet(spreadsheet_key, request.session.get('token'), username, password, request)
 
             #if the message is not ok
             if generator != 'ok':
@@ -192,3 +192,8 @@ def spreadsheet_report(request): #action to handle create report from google spr
 
     c = RequestContext(request)
     return render_to_response(SPREADSHEET_REPORT, {'form':form, 'message':message}, context_instance = c)
+
+def view_report(request):
+    fname = request.GET['filename']
+    generator, response = generate(fname, request)
+    return response

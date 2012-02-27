@@ -24,7 +24,7 @@ SITE_ROOT = os.path.dirname(os.path.realpath(__file__)) #path of the app
 FILE_UPLOAD_PATH = SITE_ROOT + '/uploaded' #path to uploaded folder
 FILE_GENERATE_PATH = SITE_ROOT + '/generated' #path to generated folder
 
-def generate_from_spreadsheet(key, token, username, password):
+def generate_from_spreadsheet(key, token, username, password, request):
     message = 'ok' #message to be returned to indicate whether the function is executed successfully
 
     try: #try to get all the cell containing the data in the first sheet
@@ -54,7 +54,9 @@ def generate_from_spreadsheet(key, token, username, password):
         return "Wrong spreadsheet link or you do not have permission to modify the file, please check again!", "", ""
 
     #call generate function
-    message = generate(uploaded_file_name)
+    request.session['is_spreadsheet'] = True
+    message, response = generate(uploaded_file_name, request)
+    request.session['is_spreadsheet'] = None
 
     if  message != 'ok':
         return message, "", ""

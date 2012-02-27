@@ -16,6 +16,7 @@ urlpatterns = patterns('reporting.views',
     url(r'^add_spreadsheet/$', 'spreadsheet_report',name='spreadsheet_report'),
     url(r'^list/$','file_list',name='file_list'),
     url(r'^download/$','download_file',name='download_file'),
+    url(r'^view_report/$','view_report',name='view_report'),
     #(r'^admin/report_tool/uploads/(?P<upload_id>\d+)/$', 'views.detail'),
 
     # Uncomment the next line to enable the admin:
