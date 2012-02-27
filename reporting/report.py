@@ -102,9 +102,6 @@ def fileExtractor(sheet):
 def generate_output(list_objects,index_of_function,  group, index_of_group, body, indexes_of_body,fname, index_of_excel_function, excel_function, body_input, index_of_body_input, head, index_of_head, head_input, index_of_head_input, foot, index_of_foot, foot_input, index_of_foot_input, request, once, index_of_once, once_input, index_of_once_input, sheet, style_list, wtbook):
     message = 'ok' #message to be returned to signal the success of the function
 
-    #back up excel_function
-    backup_excel_function = excel_function[:]
-
     #back up body input
     backup_body_input = body_input[:]
 
@@ -119,7 +116,10 @@ def generate_output(list_objects,index_of_function,  group, index_of_group, body
     dict = {}
 
     #manipulate the data
-    message = manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, dict, head, index_of_head, foot, index_of_foot, once, index_of_once, once_input, index_of_once_input, request)
+    message = manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, dict, head, index_of_head, foot, index_of_foot, once, index_of_once, once_input, index_of_once_input, request, index_of_excel_function, excel_function)
+
+    #back up excel_function
+    backup_excel_function = excel_function[:]
 
     #if something's wrong, the return the message to raise exception
     if message != 'ok':
@@ -213,13 +213,49 @@ def generate_output(list_objects,index_of_function,  group, index_of_group, body
             #replace value head_values into head input
             for h in range(len(index_of_head)):
                 value = head_values[h]
-                head_input[index_of_head_input.index(index_of_head[h])] = head_input[index_of_head_input.index(index_of_head[h])].replace('{{head:' + head[h] + '}}', unicode(value))
+                if index_of_head[h] in index_of_excel_function:
+                    #replace the data in the excel function for later formula
+                    excel_function[index_of_excel_function.index(index_of_head[h])] = excel_function[
+                                                                                        index_of_excel_function.index(
+                                                                                            index_of_head[
+                                                                                            h])].replace(
+                        '{{head:' + head[h] + '}}', unicode(value))
+
+                else:# else just replace the value into the body input
+                    head_input[index_of_head_input.index(index_of_head[h])] = head_input[index_of_head_input.index(index_of_head[h])].replace('{{head:' + head[h] + '}}', unicode(value))
 
             #write head values to output file:
             for h in range(len(index_of_head_input)):
                 col_index = index_of_head_input[h][1]
                 row_index = index_of_head_input[h][0]
                 write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (indexes_of_body[0][0] - row_index) + 1, head_input[h])
+
+            #write excel functions in the head part to the output file:
+            for h in range(len(index_of_excel_function)):
+                if index_of_excel_function[h] in index_of_head:
+                    col_index = index_of_excel_function[h][1] # get column index of the cell contain excel function
+                    row_index = index_of_excel_function[h][0] # get row index of the cell contain excel function
+                    #get the excel function:
+                    temp_excel_function = excel_function[h]
+                    #remove := at the beginning
+                    temp_excel_function = temp_excel_function[2:]
+                    # process error for string in the input of the excel function:
+                    temp_excel_function = temp_excel_function.replace(unichr(8220), '"').replace(unichr(8221), '"')
+                    # try to execute the excel function as a python function, and write the result to the ouput sheet
+                    try:
+                        value_of_excel_function = eval(temp_excel_function)
+                        write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (indexes_of_body[0][0] - row_index) + 1
+                                                               , value_of_excel_function)
+                    except: #if can not execute as a python function, we will try to parse it as a excel formula
+                        try:
+                            write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (indexes_of_body[0][0] - row_index) + 1
+                                                               , xlwt.Formula(temp_excel_function))
+                        except: #if all the two above cases are failed, the raise syntax error
+                            message = 'Error in excel formula, python function definition (at cell (' + str(
+                                index_of_excel_function[h][0] + 1) + ', '
+                            message = message + str(index_of_excel_function[h][1] + 1)
+                            message = message + ')): Syntax error '
+                            return message
 
             increase_row = 1
             for i in range(2, len(values)): #iterate the list to get all the data fields
@@ -248,40 +284,41 @@ def generate_output(list_objects,index_of_function,  group, index_of_group, body
 
                 #write excel functions to the output file:
                 for h in range(len(index_of_excel_function)):
-                    col_index = index_of_excel_function[h][1] # get column index of the cell contain excel function
-                    row_index = index_of_excel_function[h][0] # get row index of the cell contain excel function
-                    #get the excel function:
-                    temp_excel_function = excel_function[h]
-                    #remove := at the beginning
-                    temp_excel_function = temp_excel_function[2:]
-                    # process error for string in the input of the excel function:
-                    temp_excel_function = temp_excel_function.replace(unichr(8220),'"').replace(unichr(8221),'"')
-                    # try to execute the excel function as a python function, and write the result to the ouput sheet
-                    try:
-                        value_of_excel_function = eval(temp_excel_function)
-                        #if the value of the function is "remove_row", the delete the current data row
-                        if (value_of_excel_function == "remove_row"):
-                            for temp_index in range(len(indexes_of_body)):
-                                #clear data and get increase row
-                                temp_increase_row = write_to_sheet(row_index, indexes_of_body[temp_index][1], sheet, wtsheet, style_list, row, "")
+                    if index_of_excel_function[h] in indexes_of_body:
+                        col_index = index_of_excel_function[h][1] # get column index of the cell contain excel function
+                        row_index = index_of_excel_function[h][0] # get row index of the cell contain excel function
+                        #get the excel function:
+                        temp_excel_function = excel_function[h]
+                        #remove := at the beginning
+                        temp_excel_function = temp_excel_function[2:]
+                        # process error for string in the input of the excel function:
+                        temp_excel_function = temp_excel_function.replace(unichr(8220),'"').replace(unichr(8221),'"')
+                        # try to execute the excel function as a python function, and write the result to the ouput sheet
+                        try:
+                            value_of_excel_function = eval(temp_excel_function)
+                            #if the value of the function is "remove_row", the delete the current data row
+                            if (value_of_excel_function == "remove_row"):
+                                for temp_index in range(len(indexes_of_body)):
+                                    #clear data and get increase row
+                                    temp_increase_row = write_to_sheet(row_index, indexes_of_body[temp_index][1], sheet, wtsheet, style_list, row, "")
+                                    if temp_increase_row > increase_row:
+                                        increase_row = temp_increase_row
+                                row -= 1
+                                break
+                            else: #else output the value of the function to the input file
+                                temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, value_of_excel_function)
                                 if temp_increase_row > increase_row:
                                     increase_row = temp_increase_row
-                            row -= 1
-                            break
-                        else: #else output the value of the function to the input file
-                            temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, value_of_excel_function)
-                            if temp_increase_row > increase_row:
-                                increase_row = temp_increase_row
-                    except : #if can not execute as a python function, we will try to parse it as a excel formula
-                        try:
-                            temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, xlwt.Formula(temp_excel_function))
-                            if temp_increase_row > increase_row:
-                                increase_row = temp_increase_row
-                        except : #if all the two above cases are failed, the raise syntax error
-                            message =  'Error in excel formula definition (at cell (' + str(index_of_excel_function[h][0] + 1) + ', '
-                            message = message + str(index_of_excel_function[h][1] + 1)
-                            message = message + ')): Syntax error '
-                            return message
+                        except : #if can not execute as a python function, we will try to parse it as a excel formula
+                            try:
+                                temp_increase_row = write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row, xlwt.Formula(temp_excel_function))
+                                if temp_increase_row > increase_row:
+                                    increase_row = temp_increase_row
+                            except : #if all the two above cases are failed, the raise syntax error
+                                message =  'Error in excel formula definition (at cell (' + str(index_of_excel_function[h][0] + 1) + ', '
+                                message = message + str(index_of_excel_function[h][1] + 1)
+                                message = message + ')): Syntax error '
+                                return message
 
                 #copy format of other cell in the body row
                 row_index = index_of_body_input[0][0]
@@ -308,16 +345,52 @@ def generate_output(list_objects,index_of_function,  group, index_of_group, body
             #replace value foot_values into foot input
             for f in range(len(index_of_foot)):
                 value = foot_values[f]
-                try:
-                    foot_input[index_of_foot_input.index(index_of_foot[f])] = foot_input[index_of_foot_input.index(index_of_foot[f])].replace('{{foot:' + foot[f] + '}}', unicode(value))
-                except :
-                    foot_input[index_of_foot_input.index(index_of_foot[f])] = foot_input[index_of_foot_input.index(index_of_foot[f])].replace('{{foot:' + foot[f] + '}}', str(value).decode('utf-8'))
+                if index_of_foot[f] in index_of_excel_function:
+                    #replace the data in the excel function for later formula
+                    excel_function[index_of_excel_function.index(index_of_foot[f])] = excel_function[
+                                                                                        index_of_excel_function.index(
+                                                                                            index_of_foot[
+                                                                                            f])].replace(
+                        '{{foot:' + foot[f] + '}}', unicode(value))
+
+                else:# else just replace the value into the body input
+                    try:
+                        foot_input[index_of_foot_input.index(index_of_foot[f])] = foot_input[index_of_foot_input.index(index_of_foot[f])].replace('{{foot:' + foot[f] + '}}', unicode(value))
+                    except :
+                        foot_input[index_of_foot_input.index(index_of_foot[f])] = foot_input[index_of_foot_input.index(index_of_foot[f])].replace('{{foot:' + foot[f] + '}}', str(value).decode('utf-8'))
 
             #write foot values to output file:
             for f in range(len(index_of_foot_input)):
                 col_index = index_of_foot_input[f][1]
                 row_index = index_of_foot_input[f][0]
                 write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (sheet.nrows - row_index) + 1, foot_input[f])
+
+            #write excel functions in the head part to the output file:
+            for h in range(len(index_of_excel_function)):
+                if index_of_excel_function[h] in index_of_foot:
+                    col_index = index_of_excel_function[h][1] # get column index of the cell contain excel function
+                    row_index = index_of_excel_function[h][0] # get row index of the cell contain excel function
+                    #get the excel function:
+                    temp_excel_function = excel_function[h]
+                    #remove := at the beginning
+                    temp_excel_function = temp_excel_function[2:]
+                    # process error for string in the input of the excel function:
+                    temp_excel_function = temp_excel_function.replace(unichr(8220), '"').replace(unichr(8221), '"')
+                    # try to execute the excel function as a python function, and write the result to the ouput sheet
+                    try:
+                        value_of_excel_function = eval(temp_excel_function)
+                        write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (sheet.nrows - row_index) + 1
+                                                               , value_of_excel_function)
+                    except: #if can not execute as a python function, we will try to parse it as a excel formula
+                        try:
+                            write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row - (sheet.nrows - row_index) + 1
+                                                               , xlwt.Formula(temp_excel_function))
+                        except: #if all the two above cases are failed, the raise syntax error
+                            message = 'Error in excel formula, python function definition (at cell (' + str(
+                                index_of_excel_function[h][0] + 1) + ', '
+                            message = message + str(index_of_excel_function[h][1] + 1)
+                            message = message + ')): Syntax error '
+                            return message
 
             #restore head_input
             head_input = backup_head_input[:]
@@ -333,10 +406,37 @@ def generate_output(list_objects,index_of_function,  group, index_of_group, body
         col_index = index_of_once_input[i][1]
         write_to_sheet(row_index,col_index, sheet, wtsheet, style_list, row_index, once_input[i])
 
+    #write excel functions in the head part to the output file:
+    for h in range(len(index_of_excel_function)):
+        if index_of_excel_function[h] in index_of_once:
+            col_index = index_of_excel_function[h][1] # get column index of the cell contain excel function
+            row_index = index_of_excel_function[h][0] # get row index of the cell contain excel function
+            #get the excel function:
+            temp_excel_function = excel_function[h]
+            #remove := at the beginning
+            temp_excel_function = temp_excel_function[2:]
+            # process error for string in the input of the excel function:
+            temp_excel_function = temp_excel_function.replace(unichr(8220), '"').replace(unichr(8221), '"')
+            # try to execute the excel function as a python function, and write the result to the ouput sheet
+            try:
+                value_of_excel_function = eval(temp_excel_function)
+                write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row_index
+                               , value_of_excel_function)
+            except: #if can not execute as a python function, we will try to parse it as a excel formula
+                try:
+                    write_to_sheet(row_index, col_index, sheet, wtsheet, style_list, row_index
+                                   , xlwt.Formula(temp_excel_function))
+                except: #if all the two above cases are failed, the raise syntax error
+                    message = 'Error in excel formula, python function definition (at cell (' + str(
+                        index_of_excel_function[h][0] + 1) + ', '
+                    message = message + str(index_of_excel_function[h][1] + 1)
+                    message = message + ')): Syntax error '
+                    return message
+
     return message
 
 # This function is used for manipulating the data:
-def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, dict, head, index_of_head, foot, index_of_foot, once, index_of_once, once_input, index_of_once_input, request):
+def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, dict, head, index_of_head, foot, index_of_foot, once, index_of_once, once_input, index_of_once_input, request, index_of_excel_function, excel_function):
     message = 'ok'
 
     #compute values for once:
@@ -350,11 +450,25 @@ def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, 
                     value = eval('a.%s'%once[o])
                 except :
                     value = ''
-
-            try:
-                once_input[index_of_once_input.index(index_of_once[o])] = once_input[index_of_once_input.index(index_of_once[o])].replace('{{once:' + once[o] + '}}', unicode(value))
-            except :
-                once_input[index_of_once_input.index(index_of_once[o])] = once_input[index_of_once_input.index(index_of_once[o])].replace('{{once:' + once[o] + '}}', str(value).decode('utf-8'))
+            if index_of_once[o] in index_of_excel_function:
+                #replace the data in the excel function for later formula
+                try:
+                    excel_function[index_of_excel_function.index(index_of_once[o])] = excel_function[
+                                                                                      index_of_excel_function.index(
+                                                                                          index_of_once[
+                                                                                          o])].replace(
+                        '{{once:' + once[o] + '}}', unicode(value))
+                except :
+                    excel_function[index_of_excel_function.index(index_of_once[o])] = excel_function[
+                                                                                      index_of_excel_function.index(
+                                                                                          index_of_once[
+                                                                                          o])].replace(
+                        '{{once:' + once[o] + '}}', str(value).decode('utf-8'))
+            else:
+                try:
+                    once_input[index_of_once_input.index(index_of_once[o])] = once_input[index_of_once_input.index(index_of_once[o])].replace('{{once:' + once[o] + '}}', unicode(value))
+                except :
+                    once_input[index_of_once_input.index(index_of_once[o])] = once_input[index_of_once_input.index(index_of_once[o])].replace('{{once:' + once[o] + '}}', str(value).decode('utf-8'))
     else:
         for o in range(len(once)):
             value = ''
