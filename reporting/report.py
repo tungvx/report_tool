@@ -449,7 +449,10 @@ def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, 
                 try:
                     value = eval('a.%s'%once[o])
                 except :
-                    value = ''
+                    try:
+                        value = eval(once[o])
+                    except :
+                        value = ''
             if index_of_once[o] in index_of_excel_function:
                 #replace the data in the excel function for later formula
                 try:
@@ -486,11 +489,14 @@ def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, 
                 try:
                     key = eval('i.%s'%group)
                 except :
-                    message =  'Error in group definition (at cell (' + str(index_of_group[0][0] + 1) + ', '
-                    message = message + str(index_of_group[0][1] + 1)
-                    message = message + ')): Object has no attribute '
-                    message = message + group + '; or the function you defined returns wrong result (must return a list of objects)'
-                    return message #return the message to signal the failure of the function
+                    try:
+                        key = eval(group)
+                    except :
+                        message =  'Error in group definition (at cell (' + str(index_of_group[0][0] + 1) + ', '
+                        message = message + str(index_of_group[0][1] + 1)
+                        message = message + ')): Object has no attribute '
+                        message = message + group + '; or the function you defined returns wrong result (must return a list of objects)'
+                        return message #return the message to signal the failure of the function
         for y in body: #iterate all the fields in the body part of this object
             try:
                 result.append(eval('i["%s"]' % y)) #try to evaluate the value of the field and add them into the result
@@ -502,12 +508,15 @@ def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, 
                     else:
                         result.append('')
                 except :
-                    index = body.index(y)
-                    message =  'Error in body definition (at cell (' + str(indexes_of_body[index][0] + 1) + ', '
-                    message = message + str(indexes_of_body[index][1] + 1)
-                    message = message + ')): Object has no attribute '
-                    message = message + y + '; or the function you defined returns wrong result (must return a list of objects)'
-                    return message
+                    try:
+                        result.append(eval(y))
+                    except :
+                        index = body.index(y)
+                        message =  'Error in body definition (at cell (' + str(indexes_of_body[index][0] + 1) + ', '
+                        message = message + str(indexes_of_body[index][1] + 1)
+                        message = message + ')): Object has no attribute '
+                        message = message + y + '; or the function you defined returns wrong result (must return a list of objects)'
+                        return message
         result = tuple(result)# convert to tupple: [] to ()
         
         if dict.get(key): # if the key allready exists, trivially append the result to this key
@@ -527,12 +536,15 @@ def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, 
                         else:
                             head_result.append('')
                     except :
-                        index = head.index(h)
-                        message =  'Error in head definition (at cell (' + str(index_of_head[index][0] + 1) + ', '
-                        message = message + str(index_of_head[index][1] + 1)
-                        message = message + ')): Object has no attribute '
-                        message = message + h + '; or the function you defined returns wrong result (must return a list of objects)'
-                        return message
+                        try:
+                            head_result.append(eval(h))
+                        except :
+                            index = head.index(h)
+                            message =  'Error in head definition (at cell (' + str(index_of_head[index][0] + 1) + ', '
+                            message = message + str(index_of_head[index][1] + 1)
+                            message = message + ')): Object has no attribute '
+                            message = message + h + '; or the function you defined returns wrong result (must return a list of objects)'
+                            return message
 
             head_result = tuple(head_result)
             dict[key].append(head_result)
@@ -550,12 +562,15 @@ def manipulate_data(list_objects, group, index_of_group, body, indexes_of_body, 
                         else:
                             foot_result.append('')
                     except:
-                        index = foot.index(f)
-                        message =  'Error in foot definition (at cell (' + str(index_of_foot[index][0] + 1) + ', '
-                        message = message + str(index_of_foot[index][1] + 1)
-                        message = message + ')): Object has no attribute '
-                        message = message + f + '; or the function you defined returns wrong result (must return a list of objects)'
-                        return message
+                        try:
+                            foot_result.append(eval(f))
+                        except :
+                            index = foot.index(f)
+                            message =  'Error in foot definition (at cell (' + str(index_of_foot[index][0] + 1) + ', '
+                            message = message + str(index_of_foot[index][1] + 1)
+                            message = message + ')): Object has no attribute '
+                            message = message + f + '; or the function you defined returns wrong result (must return a list of objects)'
+                            return message
 
             foot_result = tuple(foot_result)
             dict[key].append(foot_result)
