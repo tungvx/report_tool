@@ -22,35 +22,51 @@ def extract_information(index_of_function, index_of_group, body, indexes_of_body
                         index_of_excel_function, excel_function, value, row_x, col_x, other_info, index_of_other_info,
                         body_input, indexes_of_body_input, head, index_of_head, head_input, index_of_head_input,
                         foot, index_of_foot, foot_input, index_of_foot_input,
-                        once, index_of_once, once_input, index_of_once_input):
+                        once, index_of_once, once_input, index_of_once_input, group, reserve_postions):
     function_name = ''
-    group = ''
     value = unicode(value)
     temp = re.search('#<.*?>', value) #if the cell contains the function which returns the data
     if temp:
         function_name = (temp.group(0).rstrip('>').lstrip('#<')) #remove > at the right and #< at the left
         index_of_function.append((row_x, col_x)) #stores the index of this function
+        if (row_x, col_x) not in reserve_postions:
+            reserve_postions.append((row_x, col_x))
     else:
         temp = re.findall('{{.*?}}', unicode(value)) # find all the specified fields of data
         if temp: #if yes
             for temp1 in temp: #iterating all of the fields
                 temp1 = temp1.rstrip('}}').lstrip('{{') # remove tags to get attributes
-                if (temp1.startswith('group:')): #if the field is the group
-                    group = temp1[6:] #remove group:
-                    index_of_group.append((row_x, col_x)) #stores the location of the group
-                elif (temp1.startswith('head:')): #if the field is the group:
-                    if (row_x, col_x) not in index_of_head_input:
-                        head_input.append(value)
-                        index_of_head_input.append((row_x, col_x))
-                    head.append(temp1[5:]) #else the field is the head
-                    index_of_head.append((row_x, col_x)) #stores the location of the head
-                elif (temp1.startswith('foot:')): #if the field is the footer
-                    if (row_x, col_x) not in index_of_foot_input:
-                        foot_input.append(value) # add value to foot array
-                        index_of_foot_input.append((row_x, col_x)) #also store index of foot
-
-                    foot.append(temp1[5:]) #store the field of foot
-                    index_of_foot.append((row_x, col_x))
+                if (temp1.startswith('group')): #if the field is the group
+                    temp_group = temp1[5:] #remove group:
+                    group_key = temp_group[:temp_group.index(':')]
+                    group[group_key] = temp_group[temp_group.index(':') + 1:]
+                    index_of_group[group_key] = (row_x, col_x) #stores the location of the group
+                elif (temp1.startswith('head')): #if the field is the group:
+                    temp_head = temp1[4:] #else the field is the head
+                    head_key = temp_head[:temp_head.index(':')]
+                    if not head.get(head_key):
+                        head[head_key] = []
+                        index_of_head[head_key] = []
+                        index_of_head_input[head_key] = []
+                        head_input[head_key] = []
+                    head[head_key].append(temp_head[temp_head.index(':') + 1:])
+                    index_of_head[head_key].append((row_x, col_x)) #stores the location of the head
+                    if (row_x, col_x) not in index_of_head_input.get(head_key):
+                        head_input[head_key].append(value)
+                        index_of_head_input[head_key].append((row_x, col_x))
+                elif (temp1.startswith('foot')): #if the field is the footer
+                    temp_foot = temp1[4:]
+                    foot_key = temp_foot[:temp_foot.index(':')]
+                    if not foot.get(foot_key):
+                        foot[foot_key] = []
+                        index_of_foot[foot_key] = []
+                        index_of_foot_input[foot_key] = []
+                        foot_input[foot_key] = []
+                    foot[foot_key].append(temp_foot[temp_foot.index(':') + 1:])
+                    index_of_foot[foot_key].append((row_x, col_x))
+                    if (row_x, col_x) not in index_of_foot_input.get(foot_key):
+                        foot_input[foot_key].append(value)
+                        index_of_foot_input[foot_key].append((row_x, col_x))
                 elif (temp1.startswith('once:')): #if the field is the footer
                     if (row_x, col_x) not in index_of_once_input:
                         once_input.append(value) # add value to foot array
@@ -67,11 +83,13 @@ def extract_information(index_of_function, index_of_group, body, indexes_of_body
             if value.startswith(":="):
                 excel_function.append(value) #strores the value of the cell contain the specified excel function
                 index_of_excel_function.append((row_x, col_x)) #store index of above excel function
+            if (row_x, col_x) not in reserve_postions:
+                reserve_postions.append((row_x, col_x))
         else:
             other_info.append(value) #store other information
             index_of_other_info.append((row_x,col_x))#store the index of other information
 
-    return function_name, group
+    return function_name
 
 #function to get a list of objects containing the data
 def get_list_of_object(function_name, index_of_function, request):
